@@ -143,6 +143,10 @@ ITS USE AND ANY RESULTS OBTAINED.
   "FFPred4/featurama/software/". Such folders still need to be created, see
   below: INSTALL - third-party software (-- FEATURE-PREDICTING SOFTWARE).
 
+  IMPORTANT: You should ensure each of these packages is installed and working
+  correctly before you attempt to run FFPred. NETPHOS, NETOGLYC, NETNGLYC will
+  all need to be hand edited.
+
 #------------------------------------------------------------------------------
 
 # INSTALL - third-party software

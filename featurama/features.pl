@@ -84,7 +84,7 @@ sub readConfig
         if ($line =~ /(\S+)\s+(\S+)/)
         {
             my ($key, $value) = ($1, $2);
-            $value = "$rootdir/$value" unless (substr($value, 0, 1) eq '/');
+            $value = "$value" unless (substr($value, 0, 1) eq '/');
             $cfg->{$key} = $value;
         }
     }

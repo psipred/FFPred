@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 
-# Runs standalone FFPred 2.0 jobs.
-# The subversion (date of SVM training) must be specified by $subversion below.
+# Runs standalone FFPred 4.0 jobs.
 #
 # The user may need to modify $FFPred_dir and/or $grid_engine_task_ID_variable
 # as described below ("IMPORTANT" messages).
@@ -18,8 +17,6 @@ use strict;
 use Getopt::Long;
 use File::Copy;
 use FindBin;
-
-my $subversion = '04 July 2012';
 
 # IMPORTANT : set the following variable ($FFPred_dir) to the absolute path to
 # this script.
@@ -72,7 +69,7 @@ die "$usage" unless ((-T $fasta) && (-w $dirOut));
 # Initialise useful variables.
 my $submit_datetime = Timestamp();
 
-my $jobs_directory = ReadConfigPATH($FFPred_dir)
+my($jobs_directory, $cfg) = ReadConfigPATH($FFPred_dir)
     or die "\n----- error in sub ReadConfigPATH -----\n\n";
 
 my $GOdomains = {
@@ -226,7 +223,7 @@ foreach my $id (keys %$inputs)
         or die "\n----- error in sub Parse_features -----\n\n";
 
     print STDERR "\n".Timestamp()." - Started using SVM library.";
-    $error += RunSVM($FFPred_dir, $feature_groups_lists, $GOterms, $job, $pred);
+    $error += RunSVM($FFPred_dir, $feature_groups_lists, $GOterms, $job, $pred, $cfg);
     print STDERR "\n".Timestamp()." - Finished using SVM library!\n";
 
     die "Error ($error) while running SVMs - ABORTING !\n" if ($error);
@@ -251,6 +248,8 @@ sub ReadConfigPATH
 {
     my ($rootdir) = @_;
     my $cfgPATH = "";
+     my $cfg = {};
+
     open(CONFIG, "<", "$rootdir/CONFIG") or print STDERR "Cannot read CONFIG - $!\n" and exit;
 
     while (defined(my $line = <CONFIG>))
@@ -261,12 +260,18 @@ sub ReadConfigPATH
             $cfgPATH = $1;
             $cfgPATH = "$rootdir/$cfgPATH" unless (substr($cfgPATH, 0, 1) eq '/');
         }
+        if ($line =~ /(\S+)\s+(\S+)/)
+        {
+            my ($key, $value) = ($1, $2);
+            $value = "$rootdir/$value" unless (substr($value, 0, 1) eq '/');
+            $cfg->{$key} = $value;
+        }
     }
 
     close(CONFIG) or print STDERR "Cannot close CONFIG - $!\n";
 
     print STDERR "'PATH' for temporary jobs not found in CONFIG file!\n" unless ($cfgPATH);
-    return $cfgPATH;
+    return $cfgPATH, $cfg;
 }
 
 sub ReadFasta
@@ -480,8 +485,8 @@ sub Parse_features
 
 sub RunSVM
 {
-    my ($rootdir, $feature_groups, $GOterms_hash, $job_hash, $pred_hash) = @_;
-    my $svm_classify = "$rootdir/bin/svm_classify";
+    my ($rootdir, $feature_groups, $GOterms_hash, $job_hash, $pred_hash, $cfg) = @_;
+    my $svm_classify = $cfg->{SVMLIGHT}."/svm_classify";
     my $error_SVMlight = 0;
 
     foreach my $criteria (keys %$GOterms_hash)
@@ -565,7 +570,7 @@ sub PrintSVMresults
         open(RAW, ">", $filepath_raw) or print STDERR "Cannot open file $filepath_raw - $!\n" and return;
 
         print FORMATTED "----------------------------------------------------------------------------------------------------\n" .
-                        "                     \\\\ FFPred // version 2.0, subversion: $subversion training\n" .
+                        "                     \\\\ FFPred // version 4.0\n" .
                         "                               Results for \"$job_hash->{'id'}\" - $criteria criteria\n" .
                         "                                    Job md5: $job_hash->{'md5'}\n" .
                         "                               Submitted on: $job_hash->{'submitted'}\n" .
@@ -578,7 +583,7 @@ sub PrintSVMresults
                         "                     Description - Full GO term name\n\n" .
                         "------------------------------------------ GO TERM RESULTS -----------------------------------------\n";
 
-        print RAW "#   FFPred version 2.0, subversion: $subversion training\n" .
+        print RAW "#   FFPred version 4.0\n" .
                   "#   Results for \"$job_hash->{'id'}\" - $criteria criteria\n";
 
         if ((scalar(@GOterms_safe) > 0) || (scalar(@GOterms_unsafe) > 0))
@@ -630,7 +635,7 @@ sub PrintSVMresults
 
         open(ALL, ">", $filepath_all) or print STDERR "Cannot open file $filepath_all - $!\n" and return;
 
-        print ALL "#   FFPred version 2.0, subversion: $subversion training\n" .
+        print ALL "#   FFPred version 4.0\n" .
                   "#   Results for \"$job_hash->{'id'}\" - $criteria criteria\n" .
                   "#   Submitted on: $job_hash->{'submitted'}\n" .
                   "#\n" .
