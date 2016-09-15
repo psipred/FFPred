@@ -1,0 +1,19 @@
+
+MEMSAT-SVM: Alpha-helical transmembrane protein topology prediction
+using Support Vector Machines
+
+Generating SVM input files...
+Running svm_classify...
+/cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/bin/svm_classify -v 0 /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/input/tmk5l9h5h5kq99j0.unmasked2_w35_TM.input /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/models/MEMSAT-SVM_w35_IO.model /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_SVM_w35_IO.prediction
+/cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/bin/svm_classify -v 0 /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/input/tmk5l9h5h5kq99j0.unmasked2_w33_TM.input /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/models/MEMSAT-SVM_w33_HL.model /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_SVM_w33_HL.prediction
+/cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/bin/svm_classify -v 0 /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/input/tmk5l9h5h5kq99j0.unmasked2_w27_TM.input /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/models/MEMSAT-SVM_w27_SP.model /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_SVM_w27_SP.prediction
+/cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/bin/svm_classify -v 0 /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/input/tmk5l9h5h5kq99j0.unmasked2_w27_TM.input /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/models/MEMSAT-SVM_w27_RE.model /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_SVM_w27_RE.prediction
+
+Parsing SVM output files...
+Running MEMSAT-SVM...
+/cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm/bin/memsat-svm -m 220 -r 178 -s 1 -f 1 /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_SVM_ALL.out > /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2.memsat_svm
+
+Written file /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2.memsat_svm
+Written file /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_schematic.png
+Written file /scratch0/NOT_BACKED_UP/dbuchan/Code/FFPred2/jobs/tmk5l_20/tmk5l9h5h5kq99j0.unmasked2_cartoon_memsat_svm.png
+

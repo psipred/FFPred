@@ -1,0 +1,609 @@
+#------------------------------------------------------------------------------
+# README
+# Last modified: February 2016
+# Author:    psipred@cs.ucl.ac.uk
+# Standalone FFPred 4.0 for function prediction
+# Tested on linux x86_64 machines running Centos 7
+#------------------------------------------------------------------------------
+
+  Should you encounter any problems please email:
+ 		psipred@cs.ucl.ac.uk
+  including "Standalone FFPred4" in the Subject line.
+
+#------------------------------------------------------------------------------
+
+# IMPORTANT INFORMATION
+
+  Standalone FFPred 4.0 has many dependencies and cannot be run without several
+  pieces of third-party software.
+  Detailed instructions on how to set everything up are reported below. Please
+  take some time to read them carefully and in sequential order - ignore them
+  at your peril!
+
+#------------------------------------------------------------------------------
+
+# LICENSING TERMS
+
+# FFPRED LICENSING TERMS
+
+THE ENCLOSED SOURCE FILES AND ASSOCIATED DATA FILES ARE COPYRIGHT (c) 2008 A.
+LOBLEY, J. WARD, D. BUCHAN, D.COZZETTO, F.MINECCI & D. JONES
+UNIVERSITY COLLEGE LONDON.
+
+THIS CODE IS LICENSED FOR USE FREE OF CHARGE TO ACADEMIC USERS ONLY. YOU MAY
+MODIFY THE CODE BUT ALL COPYRIGHT NOTICES MUST STAY IN PLACE.
+
+POTENTIAL COMMERCIAL USERS MUST CONTACT UCL BUSINESS (HTTP://WWW.UCLB.COM) TO
+DISCUSS LICENSING TERMS BEFORE ATTEMPTING TO DOWNLOAD THE SOFTWARE.
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IF YOU CHOOSE
+TO DOWNLOAD THE SOFTWARE, YOU PERSONALLY ASSUME ALL RESPONSIBILITY AND RISK FOR
+ITS USE AND ANY RESULTS OBTAINED.
+
+#------------------------------------------------------------------------------
+
+# HARDWARE REQUIREMENTS
+
+  Linux/Unix machine.
+  At least 25 GB storage (20+ GB for UniRef90 database).
+  At least 3+ GB RAM for PSIBLAST runs against UniRef90 database.
+
+#------------------------------------------------------------------------------
+
+# SOFTWARE REQUIREMENTS
+
+  The following URLs can be used as of February 2013 to obtain needed pieces of
+  third-party software.
+
+  Note that pre-downloaded copies of these pieces of software are provided
+  within the FFPred4 download, and they can easily be all you need - please see
+  the detailed instructions that follow!
+
+  EMBOSS                ftp://emboss.open-bio.org/pub/EMBOSS/
+  PSIPRED               http://bioinfadmin.cs.ucl.ac.uk/downloads/psipred/
+  DISOPRED              http://bioinfadmin.cs.ucl.ac.uk/downloads/DISOPRED/
+  MEMSAT-SVM            http://bioinfadmin.cs.ucl.ac.uk/downloads/memsat-svm/
+  COILS                 ftp://ftp.ebi.ac.uk/pub/software/unix/coils-2.2/
+  NET-N-GLYC            http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netNglyc
+  NET-O-GLYC            http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netOglyc
+  NETPHOS               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netphos
+  SIGNALP               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp
+  WoLFPSORT             http://wolfpsort.org/WoLFPSORT_package/version0.2/
+  PFILT                 http://bioinfadmin.cs.ucl.ac.uk/downloads/pfilt/
+  BLAST                 ftp://ftp.ncbi.nih.gov/blast/executables/
+  SVM-Light             http://svmlight.joachims.org/
+
+  Perl 5.6 or later, including core modules Getopt::Long and Digest::MD5
+
+#------------------------------------------------------------------------------
+
+# DOWNLOAD
+
+  Please download FFPred 4.0  GITHUB
+
+    git clone https://github.com/psipred/FFPred4.git
+
+  A copy of this README file is included in the tar file - top level directory.
+
+#------------------------------------------------------------------------------
+
+# INSTALL - main FFPred files
+
+        cd FFPred4/
+
+  Now, make the relevant Perl scripts executable:
+
+        chmod a+x FFPred.pl
+        chmod a+x featurama/features.pl
+        chmod a+x material/uniref/UniRef_xml_to_fasta.pl
+
+  Also, make sure the relevant folders can be written to:
+
+        chmod -R u+w bin data featurama SVMs uniref90
+        chmod a+w jobs
+        chmod a+w out
+
+  Due to their size, SVM model files are distributed seperately.
+
+  wget http://bioinfadmin.cs.ucl.ac.uk/downloads/ffpred/SVMs.tar.gz
+  tar -zxvf SVMs.tar.gz
+
+  Check that all is fine with the Perl scripts at this point:
+
+        perl -c FFPred.pl
+        perl -c featurama/features.pl
+
+  Finally, note that the release includes a configuration file, called
+  "FFPred4/CONFIG", that can be edited to set many useful paths (all of them
+  are explained in detail in what follows):
+
+  PFILT		directory containing the executable for pfilt software
+  BLAST		directory containing the PSIBLAST executable
+  MAKEMAT	directory containing the makemat executable
+  SEQ2MTX	directory containing the seq2mtx executable
+  PSIPRED	directory containing the "bin/" folder for PSIPRED software
+  DISOPRED	directory containing the "bin/" folder for DISOPRED software
+  MEMSAT	directory containing the executable for MEMSAT-SVM software
+  SIGP		directory containing the executable for SignalP software
+  NETPHOS	directory containing the executable for NetPhos software
+  NETOGLYC	directory containing the executable for netOglyc software
+  NETNGLYC	directory containing the executable for netNglyc software
+  PSORT		directory containing the executable for WoLFPSORT software
+  LOWC		directory containing the executable for Low Complexity analysis (pfilt)
+  COILS		directory containing the executable for COILS software
+  SEQFEAT	directory containing the executable for SeqFeat
+  PEST		directory containing the executable for EMBOSS/pestefind software
+  PATH		directory for temporary FFPred4 files
+  DB		full path to FASTA database (UniRef90)
+  MASK_DB	full path to masked version of FASTA database (UniRef90)
+
+  Importantly, as explained in the file header, all paths need to be specified
+  either starting inside the main FFPred4 directory or as full paths.
+  They are currently set on default values; for all software used for feature
+  prediction, these defaults correspond to paths to folders located inside
+  "FFPred4/featurama/software/". Such folders still need to be created, see
+  below: INSTALL - third-party software (-- FEATURE-PREDICTING SOFTWARE).
+
+#------------------------------------------------------------------------------
+
+# INSTALL - third-party software
+
+
+  -- GENERAL INFORMATION
+
+  Recent releases of third-party software, or versions that are more suitable
+  for the user's needs/operating system/etc, can be downloaded from appropriate
+  sources (see above).
+  We provide compressed files of all needed third-party software working well
+  for example with a linux x86_64 machine running Scientific Linux 6 (see the
+  content of "FFPred4/material/third_party/"); these default versions exactly
+  correspond to the versions that were used for the training of FFPred4 and for
+  running the test examples included below.
+
+  Users can decide whether to use the most recent versions or the ones we
+  provide; however, in the first case, outputs may be different as FFPred4's
+  SVMs were trained (and optimised) on the versions we provide.
+
+  In case the user needs to re-download some of the software due to different
+  flavour of operating system etc (for example for BLAST), an indication of the
+  preferred, "default" versions that were used for the training of FFPred4 can
+  be found in the appropriate sections below (BLAST, SVM-Light,
+  FEATURE-PREDICTING SOFTWARE).
+
+  The same is true for the version of the UniRef90 database used for BLAST
+  searches, except that in this case the default version is NOT provided within
+  the downloaded file due to its size (~20 GB). In this case, the default
+  version (i.e. the one used for training) is the UniRef90 database release
+  2012_06 and can be downloaded from:
+
+  ftp://ftp.uniprot.org/pub/databases/uniprot/previous_releases/
+  ftp://ftp.ebi.ac.uk/pub/databases/uniprot/previous_releases/
+
+  Important :
+  In all cases, the final path to the directory containing the relevant
+  file (or the "bin/" folder in the cases of PSIPRED and DISOPRED programs)
+  must be specified in the CONFIG file (see sections below).
+
+  -- Small binaries
+
+  This installs the small scripts that FFPred requires, seq2mtx, features and
+  pfilt.
+
+  cd src
+  make
+  make install
+
+  -- BLAST
+
+  BLAST executables (default version: BLAST 2.2.26) can be either downloaded or
+  obtained from "FFPred4/material/third_party/blast-2.2.26-ia32-linux.tar.gz".
+  Note that use of BLAST+ is not supported within FFPred4.
+  Follow their instructions for extracting/compiling the material as needed in
+  a folder of your choice (e.g. within "FFPred4/material/third_party/"). After
+  doing that, note that only few of the files are needed by FFPred4. Firstly,
+  copy the following executables into the folder that is specified in the
+  CONFIG file next to the 'BLAST' label (the default is simply 'bin', which of
+  course indicates the "FFPred4/bin/" folder):
+
+  formatdb
+  blastpgp
+  makemat
+
+  Also, copy the content of the "data/" folder within the BLAST release
+  into a folder called "data/" and sitting in the same directory as that "bin/"
+  folder containing the executables (in the default case, that will be
+  "FFPred4/data/").
+
+
+  -- SVM-Light
+
+  SVM-Light version 6.02 must be either downloaded or obtained from
+  "FFPred4/material/third_party/svm_light.tar.gz".
+  Follow instructions on their website (see above, SOFTWARE REQUIREMENTS) for
+  extracting/compiling the material as needed in a folder of your choice (e.g.
+  within "FFPred4/material/third_party/"). After doing that, note that only one
+  file is needed by FFPred4. Thus, copy the "svm_classify" executable into the
+  folder that is specified in the CONFIG file (folder "FFPred4/bin/" in the
+  default case).
+
+
+  -- FEATURE-PREDICTING SOFTWARE
+
+  Twelve pieces of software are used by FFPred4 for feature prediction. With
+  the exception of SeqFeat, which is only available as part of the FFPred4
+  download, all of them can be obtained elsewhere if needed (see SOFTWARE
+  REQUIREMENTS above). Otherwise, default files provided as part of the FFPred4
+  release ("FFPred4/material/third_party/") can be used for all of them.
+  The default versions are:
+
+  PSIPRED	3.3
+  DISOPRED	2.43
+  MEMSAT-SVM	1.22
+  COILS		2.2
+  EMBOSS	6.4.0
+  netNglyc	1.0c
+  netOglyc	3.1d
+  netphos	3.1 (consists of "ape" version 1.0)
+  pfilt		1.4 (used for Low Complexity analysis)
+  SeqFeat	no version number
+  SignalP	4.0e
+  WoLFPSORT	0.2
+
+  In all cases, files need to be extracted and compiled/installed locally,
+  according to the corresponding (third-party) instructions; this can be
+  time consuming and OS-dependent. Note that this must be done in such a way to
+  ensure that final files are placed inside the appropriate folder compatibly
+  with the content of the CONFIG file ("FFPred4/CONFIG") - default locations
+  are folders within "FFPred4/featurama/software/".
+  Of course if needed, the CONFIG file can be edited (no change is needed if
+  all defaults are used, and if all programs are installed in their default
+  locations as in the "Example install" below), so that for each piece of
+  software the directory that contains the main executable file (or
+  exceptionally, the "bin/" folder in the cases of the PSIPRED and DISOPRED
+  programs) is exactly the one reported in the CONFIG file, to the right of the
+  corresponding label.
+  In detail, for each different program, the path that needs to be specified in
+  the CONFIG file is:
+
+  PSIPRED	path to directory containing PSIPRED's "bin/" folder (that contains the psipred executable)
+  DISOPRED	path to directory containing DISOPRED's "bin/" folder (that contains the disopred executable)
+  MEMSAT	path to directory containing the "run_memsat-svm.pl" executable
+  COILS		path to directory containing the "ncoils" executable
+  PEST		path to directory containing the "epestfind" executable within the EMBOSS software
+  NETNGLYC	path to directory containing the "netNglyc" executable
+  NETOGLYC	path to directory containing the "netOglyc" executable
+  NETPHOS	path to directory containing the "ape" executable within the ape software
+  LOWC		path to directory containing the "pfilt" executable (i.e. "FFPred4/bin": see _NOTE_A_ below)
+  SEQFEAT	path to directory containing the "features" executable
+  SIGP		path to directory containing the "signalp" executable
+  PSORT		path to directory containing the "runWolfPsortSummary" executable within WoLFPSORT
+
+  Example install:
+
+  The following instructions install the EMBOSS program, needed to compute the
+  PEST sequence features by means of its "epestfind" executable, respecting all
+  default paths within the FFPred4 release. EMBOSS is the largest third-party
+  program, with the most time consuming compilation/installation process; the
+  same can then be done easily for all other programs.
+  As usual, note that a different version can be downloaded if needed for you
+  system/platform - these instructions refer to the default case.
+  From the main FFPred4 directory run:
+
+        tar -xzvf material/third_party/EMBOSS-6.4.0.tar.gz -C featurama/software/
+
+  This command used the version of EMBOSS that is provided with the FFPred4
+  release, but it can easily be adapted using any EMBOSS tar file as the first
+  argument.
+  The command places files into a "FFPred4/featurama/software/EMBOSS-6.4.0/"
+  folder.
+  It is then sufficient to follow the third-party instructions found in file
+  "FFPred4/featurama/software/EMBOSS-6.4.0/INSTALL". For example, run the
+  following commands (importantly, note that, as suggested in that file, the
+  "configure" command will need the prefix option to specify the local FULL
+  path to the newly created "EMBOSS-6.4.0/" directory; such full path is simply
+  indicated here as "/full/path/to/FFPred4/featurama/software/EMBOSS-6.4.0"):
+
+        cd featurama/software/EMBOSS-6.4.0/
+        ./configure --prefix="/full/path/to/FFPred4/featurama/software/EMBOSS-6.4.0"
+        make
+        make check
+        make install
+        make installcheck
+
+  In the case of EMBOSS, this may require some time, and will also print out
+  several messages.
+  Note that the defaults in the CONFIG file are respected (see tables above),
+  since the executable "epestfind" is found inside the folder with path
+  "featurama/software/EMBOSS-6.4.0/bin".
+
+  Similarly, in the default case when the versions provided here are used, all
+  other third-party programs can be decompressed using for example the
+  following commands, which are of course run again from the main FFPred4
+  directory (note the different flags for different compression methods):
+
+        tar -xzvf material/third_party/psipred3.3.tar.gz -C featurama/software/
+        tar -xzvf material/third_party/disopred2.43.tar.gz -C featurama/software/
+        tar -xzvf material/third_party/memsat-svm1.2.tar.gz -C featurama/software/
+        tar -xZvf material/third_party/signalp-4.0e.Linux.tar.Z -C featurama/software/
+        tar -xZvf material/third_party/netphos-3.1.Linux.tar.Z -C featurama/software/
+        tar -xZvf material/third_party/netOglyc-3.1d.Linux.tar.Z -C featurama/software/
+        tar -xZvf material/third_party/netNglyc-1.0c.Linux.tar.Z -C featurama/software/
+        tar -xzvf material/third_party/WoLFPSORT_package_v0.2.tar.gz -C featurama/software/
+        tar -xzvf material/third_party/ncoils.tar.gz -C featurama/software/
+        tar -xzvf material/third_party/seqfeat.tar.gz  -C featurama/software/
+
+  If using different versions, make sure to extract files to those locations
+  (see the "-C" flag) when using the default CONFIG file. After that, compiling
+  and installing them appropriately in those locations will respect all default
+  path values.
+  Note that most programs will need the main scripts to be edited and few
+  useful paths and variables, usually at the top of file, to be set
+  appropriately according to local configurations.
+  Also, due to compatibility issues and problems with FFPred legacy code, the
+  following need to be observed:
+  _NOTE_A_) the "pfilt" program (as usual, obtain the source files from
+  "FFPred4/material/third_party/pfilt1.4.tar.gz" or at the webpage found above
+  under "SOFTWARE REQUIREMENTS") needs to be used later to prepare the database
+  for use by FFPred4, and also it actually constitutes the (only) file needed
+  for one of the feature analyses (the Low Complexity analysis): to make sure
+  one copy of the executable only is used, FFPred4 is configured so that the
+  "pfilt" executable obtained after compiling needs to be placed inside
+  "FFPred4/bin/", as per the default in the CONFIG file.
+  Thus, just extract/compile the pfilt program as needed in a folder of your
+  choice (e.g. within "FFPred4/material/third_party/") and then simply place
+  the "pfilt" executable inside the "FFPred4/bin/" folder.
+  This also means that there will be no "LowComplexity" folder inside the
+  "FFPred4/featurama/software/" directory, as no more files are needed for this
+  analysis;
+  _NOTE_B_) once PSIPRED has been installed, the "seq2mtx" executable found
+  inside PSIPRED's "bin/" folder needs to be copied into the "FFPred4/bin/"
+  directory as well;
+  _NOTE_C_) for the "ape" program, the README file has been included as
+  "FFPred4/material/third_party/netphos-3.1.readme", as it is not included in
+  the tar file. Also, note that a new symbolic link may need to be created
+  inside folder "ape-1.0/bin/" that points to the appropriate executable, e.g.
+  "nnhowplayer6_Linux.i386", and has a name that is appropriate for the local
+  OS; for example, if command 'uname -s' gives 'Linux' and 'uname -m' gives
+  'x86_64' for your system, the command to be run inside the "ape-1.0/bin/"
+  folder is 'ln -s nnhowplayer6_Linux.i386 nnhowplayer6_Linux.x86_64';
+  _NOTE_D_) for BOTH the "netNglyc" and "netOglyc" programs, while configuring
+  variables at the top of the main script (the one with the same name as the
+  program's), the 'setenv SIGNALP ...' command needs to be commented out to
+  become '#setenv SIGNALP ...'; this is because the programs are currently not
+  compatible with the latest version of SignalP, and anyway the interaction of
+  both programs with SignalP is not used by FFPred4;
+  _NOTE_E_) for the "coils" program, we suggest to re-compile it (see the
+  third-party INSTRUCTIONS file) and call the output executable "ncoils", so
+  that it does not clash with existing files - this means that the the
+  parameter passed to the "-o ncoils-osf" flag in the command for compiling
+  needs to be modified to "-o ncoils"; this will be compatible with the default
+  in the CONFIG file. Also, note that both source C files used in that command
+  need an extra line on top: "#include <string.h>". Importantly, note that the
+  environment variable $COILSDIR mentioned in the INSTRUCTIONS file does not
+  need to be set: this is taken care of by the FFPred4 code.
+
+  Lastly, note that at this point the "FFPred4/bin/" directory should have
+  exactly the following content:
+
+  blastpgp
+  formatdb
+  makemat
+  pfilt
+  seq2mtx
+  svm_classify
+
+
+  -- IMPORTANT - ISSUES WITH MEMSAT-SVM
+
+  MEMSAT-SVM files work perfectly for single jobs as of version 1.2 (included
+  in the FFPred4 release). However, in case users want to run batch jobs on a
+  cluster/HPC facility via e.g. SGE or other Grid Engine systems, issues may
+  arise if multiple very similar sequences are submitted at the same time,
+  which in turn may prevent the FFPred4 standalone from running properly.
+
+  To avoid those, after installing MEMSAT-SVM, just run BOTH of the following
+  two commands from the main FFPred4 directory to copy bug-fixed versions of
+  the relevant files to the appropriate folders:
+
+        cp material/memsat_correct/Memsat.pm featurama/lib/
+        cp material/memsat_correct/run_memsat-svm.pl featurama/software/memsat-svm/
+
+  Note that after doing this, all special paths within the main MEMSAT-SVM
+  executable ("FFPred4/featurama/software/memsat-svm/run_memsat-svm.pl") need
+  to be set again. In particular:
+  A) variables $ncbidir and $dbname at the top of the executable should in
+  principle be set respectively to full paths to "FFPred4/bin/" and
+  "FFPred4/uniref90/uniref90.fasta" (in the default cases, or to the relevant
+  user-defined locations if defaults are changed) - although note that when
+  using MEMSAT-SVM with FFPred4, those variables will not be actually used;
+  B) importantly, the library declaration (use lib ...) on line 20 of the
+  executable should be edited to point to the FULL path to folder
+  "FFPred4/featurama/software/memsat-svm/lib".
+
+
+  -- DATABASE
+
+  The database to be used for BLAST searches by some of the programs needs to
+  be obtained and installed.
+  These instructions explain how to do so in the sample case when the default
+  version of the database is used, and placed in the default location - proceed
+  in a similar way for the database of your choice. In particular, any final
+  location can be used, as long as it is specified correctly in the CONFIG file
+  ("FFPred4/CONFIG").
+
+  Download file uniref2012_06.tar.gz from one of the ftp sites suggested for
+  UniRef90 under GENERAL INFORMATION above (after getting to the main ftp site,
+  follow "release-2012_06/uniref/") and extract the UniRef90 from its content
+  using e.g. 'tar -xzvf' and then 'tar -xvf' and 'gunzip' as appropriate.
+  All this can be achieved for example running the following commands from the
+  main FFPred4 directory:
+
+        wget -P uniref90/ ftp://ftp.ebi.ac.uk/pub/databases/uniprot/previous_releases/release-2012_06/uniref/uniref2012_06.tar.gz
+        tar -xzvf uniref90/uniref2012_06.tar.gz -C uniref90/
+        tar -xvf uniref90/uniref90.tar -C uniref90/
+        gunzip uniref90/uniref90.xml.gz
+
+  Check that the UniRef90 files are part of the correct release (2012_06,
+  13-Jun-2012) by inspecting file "uniref90/uniref90.release_note".
+  For old releases, the FASTA version of UniRef90 is not provided - only the
+  XML version can be found in the tar file. To convert the XML version to FASTA
+  after unzipping it, use the Perl script found in "FFPred4/material/uniref/".
+  For example if the unzipped XML file has path "uniref90/uniref90.xml", as in
+  this sample case, from the main FFPred4 directory simply run:
+
+        material/uniref/UniRef_xml_to_fasta.pl uniref90/uniref90.xml > uniref90/uniref90.fasta
+
+  Once such final FASTA version of UniRef90 is obtained, all other files
+  obtained from the UniProt download should be discarded.
+
+  Note that as explained above, in any case the final UniRef90 file needs to be
+  found inside the location specified under "DB" in the CONFIG file (default:
+  "FFPred4/uniref90/"), as indeed it is in this sample case.
+
+  Importantly, the following manipulations of the database need to be performed
+  from within its own folder - if not using the default location, please adapt
+  all following commands accordingly.
+
+  Change working directory to where the database is:
+
+        cd uniref90/
+
+  As usual, the database needs to be formatted for later use with BLAST:
+
+        ../bin/formatdb -i uniref90.fasta
+
+  Also, a masked version needs to be created for use with PSIPRED:
+
+        ../bin/pfilt uniref90.fasta > uniref90.masked.fasta
+
+  Again, the final location of this file needs to be the same as in the CONFIG
+  file, under "DB_MASK", and the masked database needs to be formatted too:
+
+        ../bin/formatdb -i uniref90.masked.fasta
+
+#------------------------------------------------------------------------------
+
+# USEFUL TIPS
+
+  The next section details how to run the FFPred4 standalone; however, here is
+  some important advice to bear in mind before doing so.
+
+  A) Importantly, BLAST running times can be noticeably speeded up by using
+  more than one processor if available. In order to do so, FFPred4 passes the
+  appropriate flag (-a) to the blastpgp executable - the default is set to 1
+  processor. To change this default to the desired value, simply edit file
+  "FFPred4/featurama/lib/PsiBlast.pm" and place the number of available
+  processors after the "-a" flag, on line 42.
+
+  B) When running, the FFPred4 main script outputs useful/debugging information
+  to standard output or to standard error. Most of that (and in particular, ALL
+  of the standard output) is produced by third-party programs; however, some
+  messages in the standard error stream are produced specifically by FFPred4.
+  It can be useful to redirect those (especially the standard error) and save
+  them to file, for later inspection, especially when having problems or when
+  looking for detailed information about the prediction proces (including md5
+  code associated to each query sequence).
+
+  C) Several sections of commented out text are available at the top of the
+  main FFPred4 script ("FFPred4/FFPred.pl") to concisely summarise the most
+  important instructions to run the script. Apart from what is explained there
+  and what is found in this README file, nothing else should need to be
+  modified for a correct running of FFPred4.
+
+  D) Temporary files used by both third-party programs and FFPred4 are deleted
+  by default. These too may be useful - if needed, consult the section below
+  for instructions on how to retain a copy of all of them.
+
+#------------------------------------------------------------------------------
+
+# RUNNING FFPred4, and EXAMPLE OUTPUT
+
+  As explained in comments to code at the top of the main FFPred4 executable
+  ("FFPred4/FFPred.pl"), FFPred4 runs on a single FASTA file containing one or
+  more sequences each with a FASTA header, for example placed inside the
+  "FFPred4/in/" input folder.
+
+  Temporary files are saved inside the "FFPred4/jobs/" folder. For a given
+  sequence, all files are saved in a subfolder named using the first 5
+  characters of the sequence's md5 code, or simple variations in case more than
+  one sequence have the same md5 code.
+  In the default case, such sub-folders are deleted as the job terminates. In
+  case it is needed to inspect those files, the "FFPred4/FFPred.pl" executable
+  needs to be edited and line 240 needs to be commented out, so that it reads:
+    #Clean_temp($job);
+  Also, the standard error stream needs to be redirected and saved to file in
+  this case, since it contains information useful to associate a sequence's
+  name to its md5 code.
+
+  Output files are saved into the "FFPred4/out/" folder. For a given sequence,
+  all files are saved in a subfolder named "FFPred_XXX/" where XXX is a short
+  identifier taken from the sequence's FASTA header (e.g. if the FASTA header
+  consists of a UniProtKB AC number, XXX will be the AC number).
+
+  Example input-output files are provided inside the "FFPred4/test/" folder.
+  The "FFPred4/test/in/" folder contains an input FASTA file including 4 test
+  sequences. Folders "FFPred4/test/out/jobs/" and "FFPred4/test/out/outputs/"
+  contain the corresponding temporary and output folders.
+  In order to test the standalone FFPred4 program, copy the input file into the
+  input folder and run FFPred4 (note that in the default case, the temporary
+  files will be deleted). From the main FFPred4 folder, simply run:
+
+        cp test/in/TEST.fsa in/
+        ./FFPred.pl -i in/TEST.fsa
+
+  The running time of FFPred4 on different sequences may vary between several
+  minutes to hours, depending on the sequence and hardware specifications.
+  In general, FFPred4 can be run in a similar way:
+
+        ./FFPred.pl -i <input_FASTA_file>
+
+  or:
+
+        ./FFPred.pl -i <input_FASTA_file> -o <output_folder>
+
+  Note that if the output folder is omitted (first case) it defaults to the
+  "FFPred4/out/" folder.
+
+  Results can be compared to those inside "FFPred4/test/out/".
+  For each sequence, a folder containing 5 files is created:
+  *.results		values for all features - not of direct interest
+  *.features		rescaled final features - not of direct interest
+  *.lax_raw		predicted GO terms
+  *.lax_formatted	predicted GO terms, better formatted version
+  *.lax_all		posterior probabilities for all GO terms
+  The last 2 files in the above list are those that can be downloaded using the
+  web server version of FFPred4 (however note that values can be different, as
+  explained below, since the web server updates its UniRef database very
+  often). GO terms with a "low reliability level" are those shown against a red
+  background on the web server output (see the relevant publications).
+  Note that your outputs and the test outputs should be identical only when
+  exactly the same set of third-party programs and default database have been
+  installed. Also, small difference can arise due to BLAST running on different
+  systems/platforms, even when the same database is used.
+  If for example the same versions of feature-predicting programs are used, but
+  the most recent version of the UniRef90 database is installed instead of the
+  default one, results should still be very similar to the test outputs, with
+  all GO terms getting very similar values of posterior probability (see the
+  output *.lax_all files).
+
+
+  -- RUNNING 'ARRAY' JOBS ON A CLUSTER
+
+  Finally, FFPred4 can be run to submit batch jobs to a cluster/HPC facility
+  via e.g. SGE or other Grid Engine systems.
+  Note that in that case, there also exists the possibility to submit 'array'
+  jobs using "qsub -t..." or similar commands. In order to do that, users need
+  to use a special syntax when running the FFPred.pl script (note the new flag,
+  and the fact that "/full/path/to/FFPred4/in" is now the FULL path to the
+  folder containing input FASTA files, rather than a single input file):
+
+        ./FFPred.pl -a -i /full/path/to/FFPred4/in
+
+  Importantly, they also need to set variable $grid_engine_task_ID_variable (on
+  line 39) to the name of the environment variable that the system creates to
+  store the (progressive) index number of the array job task. For example for
+  the Sun Grid Engine, this environment variable is called 'SGE_TASK_ID', which
+  is the default value in the FFPred.pl script. Users need to consult the
+  manual page for their submission command (e.g. 'man qsub' when using SGE) to
+  find out the appropriate environment variable name.
+
+#------------------------------------------------------------------------------
