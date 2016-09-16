@@ -423,7 +423,6 @@ ITS USE AND ANY RESULTS OBTAINED.
   executable should be edited to point to the FULL path to folder
   "FFPred4/featurama/software/memsat-svm/lib".
 
-
   -- DATABASE
 
   The database to be used for BLAST searches by some of the programs needs to
@@ -589,7 +588,6 @@ ITS USE AND ANY RESULTS OBTAINED.
   all GO terms getting very similar values of posterior probability (see the
   output *.lax_all files).
 
-
   -- RUNNING 'ARRAY' JOBS ON A CLUSTER
 
   Finally, FFPred4 can be run to submit batch jobs to a cluster/HPC facility
@@ -609,5 +607,18 @@ ITS USE AND ANY RESULTS OBTAINED.
   is the default value in the FFPred.pl script. Users need to consult the
   manual page for their submission command (e.g. 'man qsub' when using SGE) to
   find out the appropriate environment variable name.
+
+  -- Other Options
+
+  -s the species SVMs to use, current options are fly or human
+  -m the svm class, current options strict or full
+
+  -- Drawing Images
+
+  Provide the path including file prefix to the directory containing the
+  .featcfg file
+
+  getSchematic.pl out/FFPred_test/test
+  getTmIMAGE.pl out/FFPred_test/test
 
 #------------------------------------------------------------------------------

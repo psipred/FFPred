@@ -1,168 +1,183 @@
 #!/usr/bin/perl -w
 
-# Runs standalone FFPred 4.0 jobs.
+# Runs FFPred3 jobs. NOTE: this is an edited web server version!
 #
-# The user may need to modify $FFPred_dir and/or $grid_engine_task_ID_variable
-# as described below ("IMPORTANT" messages).
+# The version number must be specified by $version below.
+#
+# The user may need to modify $FFPred_dir as described below.
 #
 # Also, if the temporary files produced by FFPred are not needed, they can be
 # deleted automatically by removing the comment sign (#) from the appropriate
 # line - look for the "Use the following line to automatically delete all
 # temporary files" message below.
 #
-# This script currently takes one input text file at a time (see "Sample usage"
-# below), containing one or more protein sequences in FASTA format.
+# Currently takes just one input text file at a time ('FASTA_input_file' - see
+# $usage below), containing one or more protein sequences in FASTA format.
 
 use strict;
 use Getopt::Long;
+use Cwd;
 use File::Copy;
 use FindBin;
+use Data::Dumper;
 
-# IMPORTANT : set the following variable ($FFPred_dir) to the absolute path to
-# this script.
+
+my $version = '4';
+
 my $FFPred_dir = $FindBin::Bin;
+# Start here.
 
-# IMPORTANT : if you are using this script to submit batch jobs to a
-# cluster/HPC facility via e.g. SGE or other Grid Engine systems, AND you are
-# submitting 'array' jobs using for example 'qsub -t' or similar commands, you
-# need to set the following variable ($grid_engine_task_ID_variable) to the
-# name of the environment variable that the system creates to store the index
-# number of the current array job task.
-# For example for the Sun Grid Engine, this environment variable is called
-# 'SGE_TASK_ID', which is the default here.
-# See the man page for your submission command (e.g. 'man qsub' when using SGE)
-# to find out the appropriate name.
-my $grid_engine_task_ID_variable = 'SGE_TASK_ID';
+my $usage = "\n$0 -i [FASTA_input_file] -o [output_folder]".
+            "\n$0 -a -i [FASTA_input_folder] -o [output_folder]\n\n".
+            "\n$0 -i [FASTA_input_file] -o [output_folder] -s fly\n\n".
+            "\n$0 -i [FASTA_input_file] -o [output_folder] -s fly -m strict\n\n";
 
-# Sample usage :
-#
-# ./FFPred.pl -i in/test.fsa -o out
-# ./FFPred.pl -a -i <FFPred_main_dir>/in -o <FFPred_main_dir>/out
-#
-# Check that input files/folders exist.
-# Also note that if using Grid Engine systems or similar systems to submit
-# batch jobs, you will need to specify full paths to all files and folders.
-my $usage = "\n$0 -i [FASTA_input_file] -o [output_folder (default: \$FFPred_dir/out/)]" .
-            "\n$0 -a -i [FASTA_input_folder] -o [output_folder (default: \$FFPred_dir/out/)]\n\n";
+# ./FFPred.pl -i in/TEST.fsa -o out # Sample usage (check that input files/folders exist!).
+# ./FFPred.pl -a -i in -o out # Sample usage for array job (check that input files/folders exist!).
 
-my ($arrayjob, $fasta, $dirOut);
+my ($arrayjob, $fasta, $dirOut, $species, $svm_class );
+$species = "human";
+$svm_class = "full";
 
 my $args = GetOptions(
                        "a"   => \$arrayjob,
                        "i=s" => \$fasta,
-                       "o=s" => \$dirOut
+                       "o=s" => \$dirOut,
+                       "s=s" => \$species,
+                       "m=s" => \$svm_class,
                      );
 
 die "$usage" unless (defined($fasta));
+$dirOut = "$FFPred_dir/executables/out" unless (defined($dirOut)); # Skipped in the web server version.
+
+my $currentWD = cwd();
+foreach my $path ($fasta, $dirOut)
+{
+    $path = "$currentWD/$path" unless ((substr($path, 0, 1) eq '/') || (substr($path, 0, 1) eq '~'));
+}
 
 if (defined($arrayjob))
 {
-    die "\nBad name for the task ID variable - ABORTING !\n\n" unless (exists $ENV{$grid_engine_task_ID_variable});
-    my @jobarray = sort glob("$fasta/*");
-    $fasta = $jobarray[$ENV{$grid_engine_task_ID_variable}-1];
+    die "No job-array variable found in the environment !\n" unless (defined($ENV{'SGE_TASK_ID'}));
+    my @jobarray = sort glob("$fasta/*"); # BEWARE! if somebody touches FASTA_input_folder while jobs are spawned ...
+    $fasta = $jobarray[$ENV{'SGE_TASK_ID'}-1];
 }
 
-$dirOut = "$FFPred_dir/out" unless (defined($dirOut));
-mkdir $dirOut unless (-d $dirOut);
-die "$usage" unless ((-T $fasta) && (-w $dirOut));
+`mkdir -p $dirOut` unless (-d $dirOut); # Skipped in the web server version.
+die "$usage" unless ((-T $fasta) && (-w $dirOut)); # Skipped in the web server version.
 
 # Initialise useful variables.
 my $submit_datetime = Timestamp();
 
-my($jobs_directory, $cfg) = ReadConfigPATH($FFPred_dir)
-    or die "\n----- error in sub ReadConfigPATH -----\n\n";
+my($jobs_directory, $cfg) = ReadConfigPATH($FFPred_dir)            # Skipped in the web server version.
+   or die "\n----- error in sub ReadConfigPATH -----\n\n"; # Skipped in the web server version.
+system("mkdir -p $jobs_directory") == 0                                                                                      # Skipped in the web server version.
+   or die "ABORT - could not create directory '$jobs_directory' for temporary files as indicated on the CONFIG file: $!\n"; # Skipped in the web server version.
+chdir $jobs_directory; # This may be useful, as BLAST default error.log file will be written here. # Skipped in the web server version.
 
 my $GOdomains = {
-                  'biological_process' => 'BP',
-                  'molecular_function' => 'MF'
+                  'cellular_component' => 'CC',
+                  'molecular_function' => 'MF',
+                  'biological_process' => 'BP'
                 };
 
-# This list must be identical to that used for training the current subversion
-# of FFPred, which is found in the 'Train_FFPred_SVMs.pm' module within the
-# training material (see definitions at beginning of module, it has the same
-# name; it is not included in the downloadable standalone version!).
+# This list must be identical to the one that was used for training the current
+# version/subversion of FFPred. The list used for training can be found in the
+# 'Train_FFPred_SVMs.pm' module within the training material (usually on the CS
+# cluster, within the "FFPred" project space, subfolder "material/lib/") - see
+# the definitions at the beginning of the module.
+# Note that this list is not included in the downloadable standalone script.
 my $feature_groups_lists = {
-                             'COILS'            =>  [1..12],
-                             'DISOPRED'         =>  [13..31],
-                             'LOWC'             =>  [32..43],
-                             'MEMSAT'           =>  [44..56],
-                             'NETNGLYC'         =>  [57..62],
-                             'NETOGLYC'         =>  [63..73],
-                             'NETPHOS'          =>  [74..123],
-                             'PEST'             =>  [124..135],
-                             'PSIPRED_helices'  =>  [143..162],
-                             'PSIPRED_sheets'   =>  [136..142,164,168..178],
-                             'PSIPRED_rcoils'   =>  [163,165..167],
-                             'PSORT'            =>  [179..190],
-                             'SEQFEAT'          =>  [191..228],
-                             'SIGP'             =>  [229..235]
+                             'COILS'            =>  [1..12] ,
+                             'DISOPRED'         =>  [13..30] ,
+                             'LOWC'             =>  [31..42] ,
+                             'MEMSAT'           =>  [43..57] ,
+                             'NETNGLYC'         =>  [58..68] ,
+                             'NETOGLYC'         =>  [69..90] ,
+                             'NETPHOS'          =>  [91..140] ,
+                             'PEST'             =>  [141..152] ,
+                             'PSIPRED_helices'  =>  [163..171,192..201] ,
+                             'PSIPRED_sheets'   =>  [155..162,182..191] ,
+                             'PSIPRED_rcoils'   =>  [153..154,172..181] ,
+                             'PSORT'            =>  [202..213] ,
+                             'SEQFEAT'          =>  [214..250] ,
+                             'SIGP'             =>  [251..258]
                            };
 
-# Read input sequences into a hashref.
-my $inputs = {};
-ReadFasta($fasta, $inputs)
-    or die "\n----- error in sub ReadFasta -----\n\n";
+# Web server version - the following bit that defines $inputs is modified so
+# that the %$inputs hash actually contains just one entry, obtained from the
+# input path $fasta : the value is the folder and the key is everything else
+# (i.e. the filename root). Note that in this version $fasta is NOT the full
+# path to the FASTA file.
+my ($input_folder, $input_rootname) = ($1, $2) if ($fasta =~ m{(.*?)([^/]+)$});
+$input_folder =~ s{/*$}{};
+die "Bad input to FFPred.pl !\n" unless ($input_folder && $input_rootname);
+# my $inputs = {$input_rootname => $input_folder};
+# Read input sequences into a hashref.                 # Skipped in the web server version.
+my $inputs = {};                                       # Skipped in the web server version.
+ReadFasta($fasta, $inputs)                             # Skipped in the web server version.
+    or die "\n----- error in sub ReadFasta -----\n\n"; # Skipped in the web server version.
 
 # Parse SVM data.
 my $GOterms = {};
-foreach my $criteria_folder (glob "$FFPred_dir/SVMs/*")
+my $criteria_folder = "$FFPred_dir/SVMs/$species/$svm_class";
+if (-d $criteria_folder)
 {
-    next unless (-d $criteria_folder);
-    my $criteria = $1 if ($criteria_folder =~ m{([^/]+)$});
-
     # Read logistic regression values for this GO term.
-    my $input_file = "$criteria_folder/${criteria}_ABfile";
+    my $input_file = "$criteria_folder/${svm_class}_ABfile";
     open(ABFILE, "<", $input_file) or die "Cannot open file $input_file !\n";
     while (defined(my $line = <ABFILE>))
     {
         next if ($line =~ /^#/);
-        @{$GOterms->{$criteria}{$1}}{'Avalue', 'Bvalue'} = ($2, $3) if ($line =~ /\s*(\S+)\s+(\S+)\s+(\S+)/);
+        @{$GOterms->{$svm_class}{$1}}{'Avalue', 'Bvalue'} = ($2, $3) if ($line =~ /\s*(\S+)\s+(\S+)\s+(\S+)/);
     }
     close(ABFILE) or print STDERR "Cannot close file $input_file !\n";
 
-    # Read which feature groups are used for this GO term.
-    $input_file = "$criteria_folder/${criteria}_feature_file";
+    # Read which feature groups are used by this GO term.
+    $input_file = "$criteria_folder/${svm_class}_feature_file";
     open(FEATURE, "<", $input_file) or die "Cannot open file $input_file !\n";
     while (defined(my $line = <FEATURE>))
     {
         next if ($line =~ /^#/);
         if ($line =~ /\s*(\S+)\s+(.+?)\s*$/)
         {
-            next unless (exists($GOterms->{$criteria}{$1}));
+            next unless (exists($GOterms->{$svm_class}{$1}));
             foreach my $feature_group (split(' ', $2))
             {
-                $GOterms->{$criteria}{$1}{'features'}{$feature_group} = 1;
+                $GOterms->{$svm_class}{$1}{'features'}{$feature_group} = 1;
             }
         }
     }
     close(FEATURE) or print STDERR "Cannot close file $input_file !\n";
 
     # Read performance evaluation values for this GO term.
-    $input_file = "$criteria_folder/${criteria}_long_summary";
+    $input_file = "$criteria_folder/${svm_class}_long_summary";
     open(SUMM, "<", $input_file) or die "Cannot open file $input_file !\n";
     while (defined(my $line = <SUMM>))
     {
         next if ($line =~ /^#/);
         if ($line =~ /\s*(\S+)\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+?)\s*$/)
         {
-            next unless (exists($GOterms->{$criteria}{$1}));
-            @{$GOterms->{$criteria}{$1}}{'MCC', 'sensitivity', 'specificity', 'precision', 'domain', 'description'} = ($2, $3, $4, $5, $GOdomains->{$6}, $7);
+            next unless (exists($GOterms->{$svm_class}{$1}));
+            @{$GOterms->{$svm_class}{$1}}{'MCC', 'sensitivity', 'specificity', 'precision', 'domain', 'description'} = ($2, $3, $4, $5, $GOdomains->{$6}, $7);
         }
     }
     close(SUMM) or print STDERR "Cannot close file $input_file !\n";
 
-    foreach my $GOterm (keys %{$GOterms->{$criteria}})
+    foreach my $GOterm (keys %{$GOterms->{$svm_class}})
     {
-        $GOterms->{$criteria}{$GOterm}{'name'} = "GO:$1" if ($GOterm =~ /GO(\d+)/);
+        $GOterms->{$svm_class}{$GOterm}{'name'} = "GO:$1" if ($GOterm =~ /GO(\d+)/);
 
         # Criteria for deciding whether the GO term's SVM is reliable.
-        my $safe_condition = ( ($GOterms->{$criteria}{$GOterm}{'MCC'}         >= 0.3) &&
-                               ($GOterms->{$criteria}{$GOterm}{'sensitivity'} >= 0.3) &&
-                               ($GOterms->{$criteria}{$GOterm}{'specificity'} >= 0.7) &&
-                               ($GOterms->{$criteria}{$GOterm}{'precision'}   >= 0.3) );
-        $GOterms->{$criteria}{$GOterm}{'safe'} = $safe_condition ? 1 : "";
+        my $safe_condition = ( ($GOterms->{$svm_class}{$GOterm}{'MCC'}         >= 0.3) &&
+                               ($GOterms->{$svm_class}{$GOterm}{'sensitivity'} >= 0.3) &&
+                               ($GOterms->{$svm_class}{$GOterm}{'specificity'} >= 0.7) &&
+                               ($GOterms->{$svm_class}{$GOterm}{'precision'}   >= 0.3) );
+        $GOterms->{$svm_class}{$GOterm}{'safe'} = $safe_condition ? 1 : "";
     }
 }
+
+#exit();
 
 # Perform FFPred jobs.
 foreach my $id (keys %$inputs)
@@ -170,73 +185,80 @@ foreach my $id (keys %$inputs)
     my ($error, $job, $pred) = (0, {}, {});
 
     $job->{'id'} = $id;
-    $job->{'seq'} = $inputs->{$id};
-    $job->{'len'} = length($job->{'seq'});
+    $job->{'seq'} = $inputs->{$id};        # Skipped in the web server version.
+    $job->{'len'} = length($job->{'seq'}); # Skipped in the web server version.
     $job->{'submitted'} = $submit_datetime;
 
-    # Find a root name for output files using this sequence's FASTA header.
-    my $output_name = my $output_rootname = ($job->{'id'} =~ /([\w\-]{1,10})/) ? $1 : 'default';
-    my $output_folder = "$dirOut/FFPred_${output_rootname}";
-    my $suffix_dir = 0;
-    while (!mkdir($output_folder))
-    {
-        die "Too many identical output folder names !\n" if (++$suffix_dir > 100000);
-        $output_name = "${output_rootname}_${suffix_dir}";
-        $output_folder = "$dirOut/FFPred_${output_name}";
-    }
+   # Find a root name for output files using this sequence's FASTA header. # Skipped in the web server version.
+   my $sanitise_name = ($job->{'id'} =~ /(\S{1,15})/) ? $1 : 'default';
+   $sanitise_name =~ s/[^\w\-]+/__/g;
+   $sanitise_name =~ s/_+$//;
+   my $output_name = my $output_rootname = $sanitise_name;
+   my $output_folder = "$dirOut/FFPred_${output_rootname}";
+   my $suffix_dir = 0;
+   while (!mkdir($output_folder))
+   {
+       die "Too many similar output folder names or folder creation error !\n" if (++$suffix_dir > 10000000);
+       $output_name = "${output_rootname}_${suffix_dir}";
+       $output_folder = "$dirOut/FFPred_${output_name}";
+   }
 
     $job->{'out'} = "$output_folder/$output_name";
+#   $job->{'out'} = "$inputs->{$id}/$id"; # Added in the web server version.
 
-    GetMD5($job);
+    GetMD5($job);       # Skipped in the web server version.
+#   $job->{'md5'} = $id; # Added in the web server version.
 
     print STDERR "\n".Timestamp()." - Started job $job->{'id'}.\n" .
                  "Input file $fasta\n" .
                  "Input sequence's md5 code $job->{'md5'}\n" .
                  "Output folder $output_folder\n";
 
-    if ($job->{'len'} < 15)
+    if (($job->{'len'} < 15) || ($job->{'len'} > 2000))
     {
         print STDERR "\n\nBEWARE !\n" .
-                     "$job->{'id'} was NOT processed !!!\n" .
-                     "Its sequence is too short: minimum 15aa, $job->{'len'} aa submitted.\n\n\n";
-        next;
+                     "$job->{'id'} is being processed, but its sequence length is outside FFPred's range.\n" .
+                     "FFPred was optimised using sequences between 15aa and 2000aa - $job->{'len'} aa were submitted.\n\n";
     }
     elsif ($job->{'seq'} =~ /^[CTAG]+$/)
     {
         print STDERR "\n\nBEWARE !\n" .
-                     "$job->{'id'} was processed, but it looks like DNA !!!\n" .
-                     "FFPred is intended for proteins.\n\n\n";
+                     "$job->{'id'} is being processed, but it looks like DNA.\n" .
+                     "FFPred is intended for protein sequences.\n\n";
     }
 
-    MkDir($jobs_directory, $job);
+    MkDir($jobs_directory, $job); # Skipped in the web server version.
+    #$job->{'dir'} = $inputs->{$id}; # Added in the web server version.
 
-    print STDERR "\n".Timestamp()." - Temporary folder $job->{'dir'} - Started featurama.\n\n";
-    $error += RunFeaturama($FFPred_dir, $job);
-    print STDERR "\n".Timestamp()." - Temporary folder $job->{'dir'} - Finished featurama!\n";
+    print STDERR "\n".Timestamp()." - Temporary folder $job->{'dir'} - Started featurama.\n\n"; # Skipped in the web server version.
+    $error += RunFeaturama($FFPred_dir, $job);                                                  # Skipped in the web server version.
+    print STDERR "\n".Timestamp()." - Temporary folder $job->{'dir'} - Finished featurama!\n";  # Skipped in the web server version.
 
-    die "Error ($error) while running featurama - ABORTING !\n" if ($error);
+    die "Error ($error) while running featurama - ABORTING !\n" if ($error);                    # Skipped in the web server version.
 
     Reformat($job);
-    Copy_features($job);
+    Copy_features($job); # Skipped in the web server version.
 
     $job->{'features'} = Parse_features($job)
         or die "\n----- error in sub Parse_features -----\n\n";
 
     print STDERR "\n".Timestamp()." - Started using SVM library.";
-    $error += RunSVM($FFPred_dir, $feature_groups_lists, $GOterms, $job, $pred, $cfg);
+    $error += RunSVM($FFPred_dir, $feature_groups_lists, $GOterms, $job, $pred, $cfg, $species);
     print STDERR "\n".Timestamp()." - Finished using SVM library!\n";
 
     die "Error ($error) while running SVMs - ABORTING !\n" if ($error);
 
-    PrintSVMresults($GOterms, $job, $pred)
+    PrintSVMresults($GOterms, $job, $pred, $species)
         or die "\n----- error in sub PrintSVMresults -----\n\n";
     print STDERR "\n".Timestamp()." - Finished printing SVM results!\n";
 
     # Use the following line to automatically delete all temporary files.
-    Clean_temp($job);
+    Clean_temp($job); # Skipped in the web server version.
 
     print STDERR "\n".Timestamp()." - Finished job $job->{'id'}.\n\n\n";
 }
+
+exit(0);
 
 
 
@@ -244,11 +266,19 @@ foreach my $id (keys %$inputs)
 
 
 
+sub Timestamp
+{
+    my @MONTHS = ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
+    my ($sec, $min, $hour, $day, $month, $year) = (localtime)[0..5];
+
+    return "$day $MONTHS[$month] " . ($year+1900) . ", $hour:$min:$sec";
+}
+
 sub ReadConfigPATH
 {
     my ($rootdir) = @_;
     my $cfgPATH = "";
-     my $cfg = {};
+    my $cfg = {};
 
     open(CONFIG, "<", "$rootdir/CONFIG") or print STDERR "Cannot read CONFIG - $!\n" and exit;
 
@@ -379,7 +409,7 @@ sub MkDir
     my $suffix_tempdir = 0;
     while (!mkdir($job_hash->{'dir'}))
     {
-        die "Too many identical temporary folder names !\n" if (++$suffix_tempdir > 100000);
+        die "Too many similar temporary folder names or folder creation error !\n" if (++$suffix_tempdir > 10000000);
         $job_hash->{'dir'} = "${job_root}_${suffix_tempdir}";
     }
 
@@ -388,19 +418,11 @@ sub MkDir
     close(OUT);
 }
 
-sub Timestamp
-{
-    my @MONTHS = ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
-    my ($sec, $min, $hour, $day, $month, $year) = (localtime)[0..5];
-
-    return "$day $MONTHS[$month] " . ($year+1900) . ", $hour:$min:$sec";
-}
-
 sub RunFeaturama
 {
     my ($rootdir, $job_hash) = @_;
 
-    my $featurama = "$rootdir/featurama/features.pl " .
+    my $featurama = "$rootdir/featurama/features.pl " . # Edited in the web server version.
                     "-d $job_hash->{'dir'} " .
                     "-i $job_hash->{'dir'}/$job_hash->{'md5'}.fsa " .
                     "-o $job_hash->{'dir'}/$job_hash->{'md5'}.results " .
@@ -452,6 +474,7 @@ sub Copy_features
 
     copy("$job_hash->{'dir'}/$job_hash->{'md5'}.features", "$job_hash->{'out'}.features");
     copy("$job_hash->{'dir'}/$job_hash->{'md5'}.results", "$job_hash->{'out'}.results");
+    copy("$job_hash->{'dir'}/$job_hash->{'md5'}.featcfg", "$job_hash->{'out'}.featcfg");
 }
 
 sub Parse_features
@@ -475,7 +498,7 @@ sub Parse_features
 
     if (@list_out > 0)
     {
-        return join(' ', @list_out);
+        return ' '.join(' ', @list_out);
     }
     else
     {
@@ -485,20 +508,21 @@ sub Parse_features
 
 sub RunSVM
 {
-    my ($rootdir, $feature_groups, $GOterms_hash, $job_hash, $pred_hash, $cfg) = @_;
+    my ($rootdir, $feature_groups, $GOterms_hash, $job_hash, $pred_hash, $cfg, $species) = @_;
     my $svm_classify = $cfg->{SVMLIGHT}."/svm_classify";
     my $error_SVMlight = 0;
 
+    # print Dumper ($GOterms_hash);
+    # exit();
     foreach my $criteria (keys %$GOterms_hash)
     {
         $pred_hash->{$criteria} = {};
-
         foreach my $GOterm (sort keys %{$GOterms_hash->{$criteria}})
         {
             my $GOhash = $GOterms_hash->{$criteria}{$GOterm};
 
             my $filepath_SVMinput = "$job_hash->{'dir'}/$job_hash->{'md5'}.${criteria}_${GOterm}_test";
-            my $filepath_SVMmodel = "$rootdir/SVMs/$criteria/${criteria}_models/${criteria}_${GOterm}.model";
+            my $filepath_SVMmodel = "$rootdir/SVMs/$species/$criteria/${criteria}_models/${criteria}_${GOterm}.model"; # Edited in the web server version.
             my $filepath_SVMpred = "$job_hash->{'dir'}/$job_hash->{'md5'}.${criteria}_${GOterm}_prediction";
 
             # Create a test file including only features used by this GO term.
@@ -515,7 +539,7 @@ sub RunSVM
             $used_features =~ s/\s$bad_features:\S+//g;
 
             open(INPUT, ">", $filepath_SVMinput) or die "Cannot open file $filepath_SVMinput - $!\n";
-            print INPUT "0 $used_features\n";
+            print INPUT "0$used_features\n";
             close(INPUT) or print STDERR "Cannot close file $filepath_SVMinput - $!\n";
 
             # Run svm_classify to obtain the prediction.
@@ -556,7 +580,7 @@ sub RunSVM
 
 sub PrintSVMresults
 {
-    my ($GOterms_hash, $job_hash, $pred_hash) = @_;
+    my ($GOterms_hash, $job_hash, $pred_hash, $species) = @_;
 
     foreach my $criteria (keys %$pred_hash)
     {
@@ -569,32 +593,32 @@ sub PrintSVMresults
         open(FORMATTED, ">", $filepath_formatted) or print STDERR "Cannot open file $filepath_formatted - $!\n" and return;
         open(RAW, ">", $filepath_raw) or print STDERR "Cannot open file $filepath_raw - $!\n" and return;
 
-        print FORMATTED "----------------------------------------------------------------------------------------------------\n" .
-                        "                     \\\\ FFPred // version 4.0\n" .
-                        "                               Results for \"$job_hash->{'id'}\" - $criteria criteria\n" .
-                        "                                    Job md5: $job_hash->{'md5'}\n" .
-                        "                               Submitted on: $job_hash->{'submitted'}\n" .
-                        "----------------------------------------------------------------------------------------------------\n" .
-                        "                                        Column content:\n" .
-                        "                     Score       - Posterior probability for the annotation\n" .
-                        "                     GO term     - GO term code\n" .
-                        "                     RL          - Reliability Level for that GO term (High or Low)\n" .
-                        "                     Domain      - Ontology domain for that GO term (MF or BP)\n" .
-                        "                     Description - Full GO term name\n\n" .
-                        "------------------------------------------ GO TERM RESULTS -----------------------------------------\n";
+        print FORMATTED "--------------------------------------------------------------------------------\n" .
+                        "                   \\\\ FFPred // version $version\n" .
+                        "                 Results for \"$job_hash->{'id'}\" - $species $criteria criteria\n" .
+                        "                         Job md5: $job_hash->{'md5'}\n" .
+                        "                    Submitted on: $job_hash->{'submitted'}\n" .
+                        "--------------------------------------------------------------------------------\n\n" .
+                        "                               Column content:\n\n" .
+                        "          Score       - Posterior probability for the annotation\n" .
+                        "          GO term     - GO term code\n" .
+                        "          RL          - Reliability Level for that GO term (High or Low)\n" .
+                        "          Domain      - Ontology domain for that GO term (CC, MF, BP)\n" .
+                        "          Description - Full GO term name\n\n" .
+                        "------------------------------- GO TERM RESULTS --------------------------------\n";
 
-        print RAW "#   FFPred version 4.0\n" .
+        print RAW "#   FFPred version $version\n" .
                   "#   Results for \"$job_hash->{'id'}\" - $criteria criteria\n";
 
         if ((scalar(@GOterms_safe) > 0) || (scalar(@GOterms_unsafe) > 0))
         {
             print FORMATTED "Score\tGO term\t\tRL\tDomain\tDescription\n" .
-                            "----------------------------------------------------------------------------------------------------\n";
+                            "--------------------------------------------------------------------------------\n";
             print RAW "#Score\tGO term\t\tRL\tDomain\tDescription\n";
         }
         else
         {
-            print FORMATTED "\n---------------------   NO GO TERMS CONFIDENTLY PREDICTED FOR THIS SEQUENCE !   --------------------\n\n";
+            print FORMATTED "\n-----------   NO GO TERMS CONFIDENTLY PREDICTED FOR THIS SEQUENCE !   ----------\n\n";
         }
 
         if (scalar(@GOterms_safe) > 0)
@@ -608,12 +632,12 @@ sub PrintSVMresults
         }
         else
         {
-            print FORMATTED "\n-----------------   NO 'SAFE' GO TERMS CONFIDENTLY PREDICTED FOR THIS SEQUENCE !   -----------------\n\n";
+            print FORMATTED "\n-------   NO 'SAFE' GO TERMS CONFIDENTLY PREDICTED FOR THIS SEQUENCE !   -------\n\n";
         }
 
         if (scalar(@GOterms_unsafe) > 0)
         {
-            print FORMATTED "\n--------------  BEWARE: the following terms are always predicted as mere speculation  --------------\n\n";
+            print FORMATTED "\n----  BEWARE: the following terms should be regarded as speculative  ----\n\n";
             foreach my $GOterm (@GOterms_unsafe)
             {
                 my $GOterm_result = "$pred_hash->{$criteria}{'unsafe'}{$GOterm}\t$GOterms_hash->{$criteria}{$GOterm}{'name'}\tL\t$GOterms_hash->{$criteria}{$GOterm}{'domain'}\t$GOterms_hash->{$criteria}{$GOterm}{'description'}\n";
@@ -623,10 +647,10 @@ sub PrintSVMresults
         }
         else
         {
-            print FORMATTED "\n----------------   NO 'UNSAFE' GO TERMS CONFIDENTLY PREDICTED FOR THIS SEQUENCE !   ----------------\n\n";
+            print FORMATTED "\n------   NO 'UNSAFE' GO TERMS CONFIDENTLY PREDICTED FOR THIS SEQUENCE !   ------\n\n";
         }
 
-        print FORMATTED "----------------------------------------------------------------------------------------------------\n";
+        print FORMATTED "--------------------------------------------------------------------------------\n";
 
         close(RAW) or print STDERR "Cannot close file $filepath_raw - $!\n";
         close(FORMATTED) or print STDERR "Cannot close file $filepath_formatted - $!\n";
@@ -635,15 +659,15 @@ sub PrintSVMresults
 
         open(ALL, ">", $filepath_all) or print STDERR "Cannot open file $filepath_all - $!\n" and return;
 
-        print ALL "#   FFPred version 4.0\n" .
-                  "#   Results for \"$job_hash->{'id'}\" - $criteria criteria\n" .
+        print ALL "#   FFPred version $version\n" .
+                  "#   Results for \"$job_hash->{'id'}\" - $species $criteria criteria\n" .
                   "#   Submitted on: $job_hash->{'submitted'}\n" .
                   "#\n" .
                   "#   Column content:\n" .
                   "#   Score       - posterior probability for the annotation\n" .
                   "#   GO term     - GO term name\n" .
                   "#   RL          - Reliability Level for that GO term (High or Low)\n" .
-                  "#   Domain      - Ontology domain for that GO term (MF or BP)\n" .
+                  "#   Domain      - Ontology domain for that GO term (CC, MF, BP)\n" .
                   "#   Description - Full GO term name\n" .
                   "#\n" .
                   "#Score\tGO term\t\tRL\tDomain\tDescription\n";

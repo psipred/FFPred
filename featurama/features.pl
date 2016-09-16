@@ -195,7 +195,7 @@ sub print_results
 
     foreach my $prog (sort keys %$PRED)
     {
-	$PRED->{$prog}->print_results($out, $type);
+	      $PRED->{$prog}->print_results($out, $type);
         $PRED->{$prog}->print_config($fconf) if (defined($fconf));
     }
 
