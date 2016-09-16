@@ -5,22 +5,22 @@
 #  You must omit trailing / characters
 #------------------------------------------------------------------------------
 
-PFILT		        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred2/bin
+PFILT		        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/bin
 BLAST		        /scratch0/NOT_BACKED_UP/dbuchan/Applications/blast-2.2.26/bin
 MAKEMAT		      /scratch0/NOT_BACKED_UP/dbuchan/Applications/blast-2.2.26/bin
-SEQ2MTX         /cs/research/bioinf/home1/green/dbuchan/Code/FFPred2/bin
+SEQ2MTX         /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/bin
 PSIPRED         /cs/research/bioinf/home1/green/dbuchan/Code/psipred
 DISOPRED        /cs/research/bioinf/home1/green/dbuchan/Code/disopred316
 MEMSAT          /cs/research/bioinf/home1/green/dbuchan/Code/memsat-svm
-SIGP            /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/signalp-4.1
-NETPHOS         /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/ape-1.0
-NETOGLYC        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/netOglyc-3.1d
-NETNGLYC        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/netNglyc-1.0
-PSORT           /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/WoLFPSort-master/bin
-LOWC            /cs/research/bioinf/home1/green/dbuchan/Code/FFPred2/bin
-COILS           /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/coils
-SEQFEAT		      /cs/research/bioinf/home1/green/dbuchan/Code/FFPred2/bin
-PEST		        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred3/packages/EMBOSS-6.4.0/bin
+SIGP            /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/signalp-4.1
+NETPHOS         /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/ape-1.0
+NETOGLYC        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/netOglyc-3.1d
+NETNGLYC        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/netNglyc-1.0
+PSORT           /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/WoLFPSort-master/bin
+LOWC            /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/bin
+COILS           /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/coils
+SEQFEAT		      /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/bin
+PEST		        /cs/research/bioinf/home1/green/dbuchan/Code/FFPred4/packages/EMBOSS-6.4.0/bin
 PATH            jobs
 DB              /scratch0/NOT_BACKED_UP/dbuchan/uniref/uniref_test_db/uniref_test.fasta
 MASK_DB         /scratch0/NOT_BACKED_UP/dbuchan/uniref/uniref_test_db/uniref_test.fasta
