@@ -2,20 +2,21 @@
 # README
 # Last modified: February 2016
 # Author:    psipred@cs.ucl.ac.uk
-# Standalone FFPred 4.0 for function prediction
+# Standalone FFPred Code Version 4.0 for function prediction
 # Tested on linux x86_64 machines running Centos 7
 #------------------------------------------------------------------------------
 
   Should you encounter any problems please email:
  		psipred@cs.ucl.ac.uk
-  including "Standalone FFPred4" in the Subject line.
+  including "Standalone FFPred" in the Subject line.
 
 #------------------------------------------------------------------------------
 
 # IMPORTANT INFORMATION
 
-  Standalone FFPred 4.0 has many dependencies and cannot be run without several
-  pieces of third-party software.
+  Standalone FFPred (Code 4.0) has many dependencies and cannot be run without several
+  pieces of third-party software. This code is capable of running analyses with 
+  Human SVMs v3.0 and Fly SVMs v1.0 (see below)
   Detailed instructions on how to set everything up are reported below. Please
   take some time to read them carefully and in sequential order - ignore them
   at your peril!
