@@ -67,7 +67,7 @@ ITS USE AND ANY RESULTS OBTAINED.
   NET-O-GLYC            http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netOglyc
   NETPHOS               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netphos
   SIGNALP               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp
-  WoLFPSORT             http://wolfpsort.org/WoLFPSORT_package/version0.2/
+  WoLFPSORT             http://bioinfadmin.cs.ucl.ac.uk/downloads/ffpred_feature_suite/wolfpsort_0.2.zip
   PFILT                 http://bioinfadmin.cs.ucl.ac.uk/downloads/pfilt/
   BLAST                 ftp://ftp.ncbi.nih.gov/blast/executables/
   SVM-Light             http://svmlight.joachims.org/
