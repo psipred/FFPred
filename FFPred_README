@@ -15,7 +15,7 @@
 # IMPORTANT INFORMATION
 
   Standalone FFPred (Code 4.0) has many dependencies and cannot be run without several
-  pieces of third-party software. This code is capable of running analyses with 
+  pieces of third-party software. This code is capable of running analyses with
   Human SVMs v3.0 and Fly SVMs v1.0 (see below)
   Detailed instructions on how to set everything up are reported below. Please
   take some time to read them carefully and in sequential order - ignore them
