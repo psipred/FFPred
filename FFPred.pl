@@ -85,6 +85,7 @@ if($web_control)
 #If you've bypassed featurama.pl then you just need to run the SVM handling code
 #in $fasta is the input folders
 #u is the UUID or job prefix
+#note that features.pl must have been run in web mode at this point
 {
   if(! defined $uuid)
   {

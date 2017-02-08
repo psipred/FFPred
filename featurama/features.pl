@@ -22,14 +22,15 @@ use Cwd;
 my $root_directory = $FindBin::Bin; # This needs to be set to the full path to the main FFPred2 folder.
 my $relative_path_CONFIG = '../CONFIG';
 
-my ($folder, $fasta, $help, $orphan, $verbose, $fconfig, $out);
+my ($folder, $fasta, $help, $orphan, $verbose, $fconfig, $out, $webcontrol);
 
 my $args = GetOptions(
                        "d=s"       => \$folder,
                        "i=s"       => \$fasta,
                        "o=s"       => \$out,
                        "fconfig=s" => \$fconfig,
-                       "orphan"    => \$orphan
+                       "orphan"    => \$orphan,
+                       "w"         => \$webcontrol,
                      );
 
 print STDERR "No args entered... $! \n" and exit(1) unless ($args);
@@ -46,7 +47,10 @@ my $cfg = readConfig($root_directory, $relative_path_CONFIG);
 $cfg->{'PATH'} = $folder;
 
 my $PRED = init($aa, $id, $md5, $cfg);
-run($PRED, $orphan);
+if(!$web_control)
+{
+  run($PRED, $orphan);
+}
 parse($PRED, $out);
 print_results($PRED, $aa, $id, $out, 'raw');
 normalise($PRED);
