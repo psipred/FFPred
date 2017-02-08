@@ -17,12 +17,12 @@ use Psort;
 use SeqFeat;
 use SigP;
 use Cwd;
-
+use Data::Dumper;
 
 my $root_directory = $FindBin::Bin; # This needs to be set to the full path to the main FFPred2 folder.
 my $relative_path_CONFIG = '../CONFIG';
 
-my ($folder, $fasta, $help, $orphan, $verbose, $fconfig, $out, $webcontrol);
+my ($folder, $fasta, $help, $orphan, $verbose, $fconfig, $out, $web_control);
 
 my $args = GetOptions(
                        "d=s"       => \$folder,
@@ -30,9 +30,8 @@ my $args = GetOptions(
                        "o=s"       => \$out,
                        "fconfig=s" => \$fconfig,
                        "orphan"    => \$orphan,
-                       "w"         => \$webcontrol,
+                       "w"         => \$web_control,
                      );
-
 print STDERR "No args entered... $! \n" and exit(1) unless ($args);
 
 open(FASTA, $fasta) or die "Can't open fasta $fasta: $!\n";
@@ -41,11 +40,17 @@ my $aa = <FASTA>; #                      Second line in FASTA file produced by t
 chomp $aa;
 close(FASTA);
 
+if($web_control)
+{
+  $fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.input/;
+  $md5 = $1;
+}
 my $id = $md5; # Weird choice inherited from legacy code.
 
 my $cfg = readConfig($root_directory, $relative_path_CONFIG);
-$cfg->{'PATH'} = $folder;
 
+$cfg->{'PATH'} = $folder;
+#print("PATH:".$cfg->{'PATH'}."\n");
 my $PRED = init($aa, $id, $md5, $cfg);
 if(!$web_control)
 {
@@ -59,6 +64,7 @@ print_results($PRED, $aa, $id, $out, 'norm', $fconfig);
 # This loop is needed due to the legacy object-oriented design used.
 foreach my $prog (keys %$PRED)
 {
+    # print Dumper $PRED->{$prog}->err();
     if ($PRED->{$prog}->err())
     {
         print STDERR "$id failed at $prog\n";
@@ -79,7 +85,7 @@ sub readConfig
     my ($rootdir, $rel_path_CONFIG) = @_;
     my $cfg = {};
 
-    print("$rootdir/$rel_path_CONFIG");
+    print("$rootdir/$rel_path_CONFIG\n");
     open(CONFIG, "<", "$rootdir/$rel_path_CONFIG") or die "Cannot read CONFIG: $!\n";
 
     while (defined(my $line = <CONFIG>))
@@ -103,10 +109,19 @@ sub init
     my ($aa, $id, $md5, $cfg) = @_;
     my $PROGS = {};
 
-    $PROGS->{PSIPRED}  = new PsiPred($aa, $id, $md5, $cfg);
     $PROGS->{SIGP}     = new SigP($aa, $id, $md5, $cfg);
-    $PROGS->{DISOPRED} = new DisoPred($aa, $id, $md5, $cfg);
-    $PROGS->{MEMSAT}   = new Memsat($aa, $id, $md5, $cfg);
+    if($web_control)
+    {
+      $PROGS->{DISOPRED} = new DisoPred($aa, $id, $md5, $cfg, 1);
+      $PROGS->{MEMSAT}   = new Memsat($aa, $id, $md5, $cfg, 1);
+      $PROGS->{PSIPRED}  = new PsiPred($aa, $id, $md5, $cfg, 1);
+    }
+    else
+    {
+      $PROGS->{DISOPRED} = new DisoPred($aa, $id, $md5, $cfg, 0);
+      $PROGS->{MEMSAT}   = new Memsat($aa, $id, $md5, $cfg, 0);
+      $PROGS->{PSIPRED}  = new PsiPred($aa, $id, $md5, $cfg, 0);
+    }
     $PROGS->{NETNGLYC} = new NetNGlyc($aa, $id, $md5, $cfg);
     $PROGS->{NETOGLYC} = new NetOGlyc($aa, $id, $md5, $cfg);
     $PROGS->{NETPHOS}  = new NetPhos($aa, $id, $md5, $cfg);
@@ -177,7 +192,7 @@ sub parse
     foreach my $prog (sort keys %$PRED)
     {
         print STDERR "Parsing $prog\n";
-	$PRED->{$prog}->parse();
+	      $PRED->{$prog}->parse();
         $PRED->{$prog}->print_keys($out, $prog);
     }
 

@@ -11,16 +11,16 @@ sub new
 {
     my ($class, $aa, $id, $md5, $cfg) = @_;
     my $name = 'PH';
-    
+
     my $self = $class->SUPER::new($aa, $id, $md5, $cfg->{'PATH'}, $name);
-    
+
     $self->{'exe'} = "$cfg->{'NETPHOS'}/ape";
-    $self->{'cmd'} = "$self->{'exe'}" . 
-                     " -r $self->{'path'}/$self->{'md5'}.fsa >" . 
+    $self->{'cmd'} = "$self->{'exe'}" .
+                     " -r $self->{'path'}/$self->{'md5'}.fsa >" .
                      " $self->{'path'}/$self->{'md5'}.netphos";
-    
+
     $self->{$self->name()} = []; # This weird organisation comes from legacy code.
-    
+
     return $self;
 }
 
@@ -47,7 +47,7 @@ sub addMidSegment
     my ($self, $RES, $idx, $type) = @_;
 
     return if $self->len() < 108;
- 
+
     my $seg = int(($idx-50) / $self->seg8())+1;
 
     if($type eq"S")
@@ -106,13 +106,13 @@ sub normalise
     $self->{results}->{num_phosS} = log(1+$self->{results}->{num_phosS})/log(763);
     $self->{results}->{num_phosT} = log(1+$self->{results}->{num_phosT})/log(1057);
     $self->{results}->{num_phosY} = log(1+$self->{results}->{num_phosY})/log(109);
-     
+
     $self->{results}->{num_CKI}    = log(1+$self->{results}->{num_CKI})/log(219);
     $self->{results}->{num_ATM}    = log(1+$self->{results}->{num_ATM})/log(105);
     $self->{results}->{num_CKII}   = log(1+$self->{results}->{num_CKII})/log(173);
     $self->{results}->{num_CaMII}  = log(1+$self->{results}->{num_CaMII})/log(10);
     $self->{results}->{num_DNAPK}  = log(1+$self->{results}->{num_DNAPK})/log(112);
-    $self->{results}->{num_EGFR}   = log(1+$self->{results}->{num_EGFR})/log(27); 
+    $self->{results}->{num_EGFR}   = log(1+$self->{results}->{num_EGFR})/log(27);
     $self->{results}->{num_GSK3}   = log(1+$self->{results}->{num_GSK3})/log(125);
     $self->{results}->{num_INSR}   = log(1+$self->{results}->{num_INSR})/log(67);
     $self->{results}->{num_PKA}    = log(1+$self->{results}->{num_PKA})/log(147);
@@ -121,7 +121,7 @@ sub normalise
     $self->{results}->{num_PKG}    = log(1+$self->{results}->{num_PKG})/log(127);
     $self->{results}->{num_RSK}    = log(1+$self->{results}->{num_RSK})/log(110);
     $self->{results}->{num_SRC}    = log(1+$self->{results}->{num_SRC})/log(40);
-    $self->{results}->{num_cdc2}   = log(1+$self->{results}->{num_cdc2})/log(332); 
+    $self->{results}->{num_cdc2}   = log(1+$self->{results}->{num_cdc2})/log(332);
     $self->{results}->{num_cdk5}   = log(1+$self->{results}->{num_cdk5})/log(606);
     $self->{results}->{num_p38MAPK}= log(1+$self->{results}->{num_p38MAPK})/log(435);
 }
@@ -153,11 +153,11 @@ sub parse
     $RES->{num_cdc2}   =0;
     $RES->{num_cdk5}   =0;
     $RES->{num_p38MAPK}=0;
-    
+
 
     for(my $i=1; $i < 9; $i++)
     {
-	$RES->{"phosS_S$i"}=0;
+	      $RES->{"phosS_S$i"}=0;
         $RES->{"phosT_S$i"}=0;
         $RES->{"phosY_S$i"}=0;
     }
@@ -226,7 +226,7 @@ sub parse
     $RES->{nterm_phosS} /= 50;
     $RES->{nterm_phosY} /= 50;
     $RES->{nterm_phosT} /= 50;
-    
+
     $RES->{cterm_phosS} /= 50;
     $RES->{cterm_phosY} /= 50;
     $RES->{cterm_phosT} /= 50;

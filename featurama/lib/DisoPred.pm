@@ -12,7 +12,7 @@ use base 'BlastPred';
 
 sub new
 {
-    my ($class, $aa, $id, $md5, $cfg) = @_;
+    my ($class, $aa, $id, $md5, $cfg, $web_control) = @_;
     my $name = 'DI';
     my $mask = 'unmasked';
     my $iter = 3;
@@ -27,7 +27,7 @@ sub new
                       " $self->{'path'}/$self->{'md5'}.$self->{'type'}.mtx" .
                       " $self->{'data'}/" .
                       " 2";
-
+    $self->{'web_control'} = $web_control;
     $self->{$self->name()} = []; # This weird organisation comes from legacy code.
 
     return $self;
@@ -72,8 +72,14 @@ sub parse
     {
         $RES->{"diso_S$i"} = 0;
     }
-
-    open(DISO, "<", "$self->{path}/$self->{md5}.$self->{'type'}.diso");
+    if($self->{'web_control'})
+    {
+      open(DISO, "<", "$self->{path}/$self->{md5}.diso");
+    }
+    else
+    {
+      open(DISO, "<", "$self->{path}/$self->{md5}.$self->{'type'}.diso");
+    }
 
     my $last = "";
     my ($from, $to) = (1, 0);

@@ -12,39 +12,40 @@ use base 'BlastPred';
 
 sub new
 {
-    my ($class, $aa, $id, $md5, $cfg) = @_;
+    my ($class, $aa, $id, $md5, $cfg, $web_control) = @_;
     my $name = 'SS';
     my $mask = 'masked';
     my $iter = 3;
     my $Evalue = 1e-3;
-    
+
     my $self = $class->SUPER::new($aa, $id, $md5, $cfg, $name, $mask, $iter, $Evalue);
-    
+
     $self->{'exe_psipred'} = "$cfg->{'PSIPRED'}/bin/psipred";
     $self->{'exe_psipass'} = "$cfg->{'PSIPRED'}/bin/psipass2";
     $self->{'data'}        = "$cfg->{'PSIPRED'}/data";
-    $self->{'cmd'}         = "$self->{'exe_psipred'}" . 
-                             " $self->{'path'}/$self->{'md5'}.$self->{'type'}.mtx" . 
-                             " $self->{'data'}/weights.dat" . 
-                             " $self->{'data'}/weights.dat2" . 
-                             " $self->{'data'}/weights.dat3 >" . 
+    $self->{'cmd'}         = "$self->{'exe_psipred'}" .
+                             " $self->{'path'}/$self->{'md5'}.$self->{'type'}.mtx" .
+                             " $self->{'data'}/weights.dat" .
+                             " $self->{'data'}/weights.dat2" .
+                             " $self->{'data'}/weights.dat3 >" .
                              " $self->{'path'}/$self->{'md5'}.$self->{'type'}.ss";
-    $self->{'cmd_psipass'} = "$self->{'exe_psipass'}" . 
-                             " $self->{'data'}/weights_p2.dat" . 
-                             " 1 1.0 1.0" . 
-                             " $self->{'path'}/$self->{'md5'}.$self->{'type'}.ss2" . 
-                             " $self->{'path'}/$self->{'md5'}.$self->{'type'}.ss >" . 
+    $self->{'cmd_psipass'} = "$self->{'exe_psipass'}" .
+                             " $self->{'data'}/weights_p2.dat" .
+                             " 1 1.0 1.0" .
+                             " $self->{'path'}/$self->{'md5'}.$self->{'type'}.ss2" .
+                             " $self->{'path'}/$self->{'md5'}.$self->{'type'}.ss >" .
                              " $self->{'path'}/$self->{'md5'}.$self->{'type'}.horiz";
-    
+    $self->{'web_control'} = $web_control;
+
     $self->{$self->name()} = []; # This weird organisation comes from legacy code.
-    
+
     return $self;
 }
 
 sub cmd_psipass
 {
     my ($self, $cmd) = @_;
-    
+
     $self->{'cmd_psipass'} = $cmd if (defined($cmd));
     return $self->{'cmd_psipass'};
 }
@@ -69,7 +70,7 @@ sub addCterm
 
 sub addMidSegment
 {
-  my ($self,$RES,$idx,$ss) = @_; 
+  my ($self,$RES,$idx,$ss) = @_;
 
   return if $self->len() < 108;
 
@@ -126,7 +127,7 @@ sub normalise
     $self->{results}->{num_helix}  = log(1+$self->{results}->{num_helix})/log(234);
     $self->{results}->{num_sheet}  = log(1+$self->{results}->{num_sheet})/log(276);
     $self->{results}->{num_rcoils} = log(1+$self->{results}->{num_rcoils})/log(300);
- 
+
     $self->{results}->{h}->{10}    = log(1+$self->{results}->{h}->{10})/log(144);
     $self->{results}->{h}->{15}    = log(1+$self->{results}->{h}->{15})/log(74);
     $self->{results}->{h}->{20}    = log(1+$self->{results}->{h}->{20})/log(58);
@@ -143,7 +144,7 @@ sub normalise
     $self->{results}->{e}->{30}    = log(1+$self->{results}->{e}->{30})/log(3);
     $self->{results}->{e}->{40}    = log(1+$self->{results}->{e}->{40})/log(3);
     $self->{results}->{e}->{10000} = log(1+$self->{results}->{e}->{10000})/log(2);
-   
+
 }
 
 sub parse
@@ -169,8 +170,8 @@ sub parse
 
     for(my $i = 0; $i < 8; $i++)
     {
-	$RES->{"helix_S".($i+1)} = 0;
-        $RES->{"sheet_S".($i+1)} = 0;
+	    $RES->{"helix_S".($i+1)} = 0;
+      $RES->{"sheet_S".($i+1)} = 0;
     }
 
     $RES->{h}->{10}    = 0;
@@ -180,7 +181,7 @@ sub parse
     $RES->{h}->{50}    = 0;
     $RES->{h}->{70}    = 0;
     $RES->{h}->{100}   = 0;
-    $RES->{h}->{10000} = 0;     
+    $RES->{h}->{10000} = 0;
 
     $RES->{e}->{10}    = 0;
     $RES->{e}->{15}    = 0;
@@ -189,14 +190,21 @@ sub parse
     $RES->{e}->{30}    = 0;
     $RES->{e}->{40}    = 0;
     $RES->{e}->{10000} = 0;
- 
+
     my $last="";
     my ($from,$to) = (1,0);
     $/="\n";
 
-    if(-s "$self->{path}/$self->{md5}.$self->{'type'}.ss2")
+    my $ss2_string = "$self->{path}/$self->{md5}.$self->{'type'}.ss2";
+
+    if($self->{"web_control"})
     {
-	open(IN, "< $self->{path}/$self->{md5}.$self->{'type'}.ss2");
+      $ss2_string = "$self->{path}/$self->{md5}.ss2";
+    }
+    #print($ss2_string."\n");
+    if(-s $ss2_string)
+    {
+	      open(IN, "< ".$ss2_string);
 
         while(<IN>)
         {
@@ -210,7 +218,7 @@ sub parse
 
             $self->addNterm($RES, $ss) if ($idx <= 50);
             $self->addMidSegment($RES, $idx, $ss) if (($idx > 50) && ($idx <= ($self->len() - 50)));
-            $self->addCterm($RES, $ss) if ($idx > ($self->len() - 50));           
+            $self->addCterm($RES, $ss) if ($idx > ($self->len() - 50));
 
             if($ss eq"$last")
 	    {
@@ -236,13 +244,13 @@ sub parse
                     {
 			$RES->{lc($last)}->{$F[$i]}++;
                     }
-                  }   
+                  }
                 }
                 $from = $idx;
 	    }
 
             $last = $ss;
-                 
+
             if($ss =~ /H/)
             {
              $RES->{helix_res}++;
@@ -271,7 +279,7 @@ sub parse
 
             for(my $i = 0; $i <@F; $i++)
             {
-		$RES->{lc($last)}->{$F[$i]}++ if $to - $from < $F[$i] && (!$i || $to-$from >= $F[$i]); 
+		$RES->{lc($last)}->{$F[$i]}++ if $to - $from < $F[$i] && (!$i || $to-$from >= $F[$i]);
             }
         }
 
@@ -288,10 +296,10 @@ sub parse
 
         for( my $i = 1; $i < 9; $i++ )
         {
-	    $RES->{"helix_S$i"} /= $self->seg8();
-            $RES->{"sheet_S$i"} /= $self->seg8();
+	        $RES->{"helix_S$i"} /= $self->seg8();
+          $RES->{"sheet_S$i"} /= $self->seg8();
         }
-       
+
     }
     else
     {
@@ -305,7 +313,7 @@ sub run
 {
     my ($self, $error) = @_;
     $error = 0 unless ($error);
-    
+
     if (-s "$self->{path}/$self->{md5}.$self->{'type'}.chk")
     {
         $self->{'makeMat'}->init();
@@ -317,10 +325,10 @@ sub run
         $self->{'seq2mtx'}->run();
         $error += $self->{'seq2mtx'}->err();
     }
-    
+
     print STDERR $self->cmd() . "\n";
     $error += system($self->cmd());
-    
+
     if (-s "$self->{path}/$self->{md5}.$self->{'type'}.ss")
     {
         print STDERR $self->cmd_psipass(), "\n";
@@ -331,7 +339,7 @@ sub run
         print STDERR "Could not find .ss file !\n";
         $error = 1;
     }
-    
+
     $self->err($error);
 }
 
