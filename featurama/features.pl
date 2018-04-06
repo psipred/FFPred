@@ -42,7 +42,7 @@ close(FASTA);
 
 if($web_control)
 {
-  $fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.input/;
+  $fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fa/;
   $md5 = $1;
 }
 my $id = $md5; # Weird choice inherited from legacy code.

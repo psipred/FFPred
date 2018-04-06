@@ -20,7 +20,7 @@ sub getDataFromFile
 {
     my ($OBJ, $id) = @_;
 
-    open(IN, "<", "$id.featcfg") or die "can't open featfcfg";
+    open(IN, "<", "$id.featcfg") or die "can't open featcfg";
 
     my ($seqid, $seq) = split(/\t/,<IN>);
     $OBJ->{'LEN'} = length $seq;
