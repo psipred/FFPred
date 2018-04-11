@@ -9,36 +9,56 @@ use MakeMat;
 use Seq2Mtx;
 use base 'BlastPred';
 
-
-
 sub new
 {
     my ($class, $aa, $id, $md5, $cfg, $web_control) = @_;
     my $name = 'TM';
     my $mask = 'unmasked';
     my $iter = 2;
-    my $Evalue = 1e-6;
+    my $evalue = 1e-6;
+    my $hvalue = 1e-6;
 
-    my $self = $class->SUPER::new($aa, $id, $md5, $cfg, $name, $mask, $iter, $Evalue);
+    my $self = $class->SUPER::new($aa, $id, $md5, $cfg, $name, $mask, $iter, $evalue, $hvalue);
 
-    $self->{'folder'}   = $cfg->{'MEMSAT'};
-    $self->{'exe'}      = "$self->{'folder'}/run_memsat-svm.pl";
-    $self->{'data'}     = "$self->{'folder'}/data";
+    $self->{'folder'}  = $cfg->{'MEMSAT'};
+    $self->{'exe'}     = "$self->{'folder'}/run_memsat-svm.pl";
+    $self->{'data'}    = "$self->{'folder'}/data";
+    $self->{'globmem'} = "$self->{'path'}/$self->{'md5'}.globmem_svm"; # Manually synchronise this with cmd below!
+    if($web_control)
+    {
+      $self->{'outfile'} = "$self->{'path'}/$self->{'md5'}.memsat_svm";
+    }
+    else{
+      $self->{'outfile'} = "$self->{'path'}/$self->{'md5'}.$self->{'type'}.memsat_svm"; # Manually synchronise this with cmd below!
+    }
     $self->{'cmd'}      = "$self->{'exe'}" .
                           " -mtx 1 -e 1 -j $self->{path}/ -o $self->{md5}.$self->{'type'} -w $self->{'folder'}/" .
                           " $self->{path}/$self->{md5}.$self->{'type'}.mtx" .
                           " > $self->{path}/$self->{md5}.memsatSVMlog";
+
     $self->{'web_control'} = $web_control;
+    $self->{'numSegments'} = 8;
+    $self->{'segments'}    = $self->createSegments($self->{'numSegments'});
     $self->{$self->name()} = []; # This weird organisation comes from legacy code.
 
     return $self;
+}
+
+sub globmem
+{
+    my ($self, $globmem) = @_;
+
+    $self->{'globmem'} = $globmem if (defined($globmem));
+    return $self->{'globmem'};
 }
 
 sub normalise
 {
     my ($self) = @_;
 
-    $self->{results}->{num_tm} = log(1+$self->{results}->{num_tm})/log(21);
+    $self->{'results'}{'num_tm_hel'} = log(1+$self->{'results'}{'num_tm_hel'}) / log(3);
+    $self->{'results'}{'num_re_hel'} = log(1+$self->{'results'}{'num_re_hel'}) / log(30);
+    $self->{'results'}{'num_tm_res'} = log(1+$self->{'results'}{'num_tm_res'}) / log(600);
 }
 
 sub parse
@@ -48,141 +68,81 @@ sub parse
     my $RES = {};
     my $CFG = $self->{$self->name()};
 
-    $RES->{'in/out'}   = 0;
-    $RES->{'tm_nterm'} = 0;
-    $RES->{'tm_cterm'} = 0;
-    $RES->{'num_tm'}   = 0;
-    $RES->{'tm_res'}   = 0;
+    my $min_TM_residues = 7; # Bypass default MEMSAT-SVM1.3 threshold for labelling a protein as transmembrane (= 1) with a more stringent criterion.
 
-    for(my $i=1; $i < 9; $i++)
+    $RES->{'glob/tm'}    = 0.5; # Default value if undefined.
+    $RES->{'num_tm_hel'} = 0;
+    $RES->{'in/out'}     = 0.5; # Default value if undefined.
+    $RES->{'num_re_hel'} = 0;
+    $RES->{'num_tm_res'} = 0;
+    $RES->{'tm_nterm'}   = 0;
+    $RES->{'tm_cterm'}   = 0;
+
+    for (my $i = 1; $i <= $self->{'numSegments'}; $i++)
     {
-        $RES->{"tm_S$i"}=0;
+        $RES->{"tm_S$i"} = 0;
     }
 
-    my $hTMData = {};
-    if($self->{'web_control'})
-    {
-      open(MEM, "<", "$self->{path}/$self->{md5}.memsat_svm") or die "Cannot open memsat_svm file... $!\n";
-    }
-    else
-    {
-      open(MEM, "<", "$self->{path}/$self->{md5}.$self->{'type'}.memsat_svm") or die "Cannot open memsat_svm file... $!\n";
-    }
+    local $/;
+    open(GLOBMEM, "<", $self->globmem()) or die "Cannot open globmem_svm file... $!\n";
+    my $globmem_out = <GLOBMEM>;
+    close(GLOBMEM);
 
-    my $helix_number = 0;
-    my $direction  = '';
-    my $best_score = 0;
-    while (defined(my $line = <MEM>))
+    my $num_TM_residues = $1 if ($globmem_out =~ /Transmembrane residues found:\s*(\d+)/);
+
+    if (defined($num_TM_residues) && ($num_TM_residues < $min_TM_residues))
     {
-        chomp $line;
-        if ($line =~ /Processing\s+(\d+)\s+heli/)
+        $RES->{'glob/tm'} = 0;
+    }
+    elsif (defined($num_TM_residues))
+    {
+        $RES->{'glob/tm'} = 1;
+
+        local $/ = "Results:";
+        open(MEMSAT, "<", $self->outfile()) or die "Cannot open memsat_svm file... $!\n";
+        my @memsat_out = <MEMSAT>;
+        close(MEMSAT);
+
+        my $memsat_result = pop @memsat_out;
+
+        if ($memsat_result =~ /^Topology:\s+(.*)/m)
         {
-            $helix_number = $1;
-            my $first_line = <MEM>;
-            if($first_line =~ /Transmembrane\shelix\s1\s+from\s+(\d+)\s+\((.+?)\)\s+to\s+(\d+)\s+.+:\s+(.+)/)
+            my $helices = $1;
+            my $n = 0;
+            foreach my $helix (split(',', $helices))
             {
-                my $start = $1;
-                my $dir = $2;
-                my $end = $3;
-                my $score = $4;
-                if($dir =~ /in/)
+                if ($helix =~ /(\d+)-(\d+)/)
                 {
-                    $direction = "+";
+                    my ($first, $last) = ($1, $2);
+
+                    $CFG->[$n]{'type'} = 'tm_helix';
+                    $CFG->[$n]{'from'} = $first;
+                    $CFG->[$n]{'to'}   = $last;
+
+                    foreach my $residue ($first..$last)
+                    {
+                        $RES->{'num_tm_res'}++;
+                        $self->addResidue($RES, $residue, 'tm');
+                    }
+
+                    $RES->{'num_tm_hel'}++;
+                    $n++;
                 }
-                else
-                {
-                    $direction = "-";
-                }
-                $hTMData->{$helix_number}{$direction}{1}{START} = $start;
-                $hTMData->{$helix_number}{$direction}{1}{END} = $end;
-                $hTMData->{$helix_number}{$direction}{1}{SCORE} = $score;
             }
         }
 
-        if($line =~ /Transmembrane\shelix\s(\d+)\s+from\s+(\d+)\s+\((.+?)\)\s+to\s+(\d+)\s+.+:\s+(.+)/)
+        if ($memsat_result =~ /^Re-entrant helices:\s+(.*)/m)
         {
-            my $helix_count = $1;
-            my $start = $2;
-            my $dir = $3;
-            my $end = $4;
-            my $score = $5;
-            $hTMData->{$helix_number}{$direction}{$helix_count}{START} = $start;
-            $hTMData->{$helix_number}{$direction}{$helix_count}{END} = $end;
-            $hTMData->{$helix_number}{$direction}{$helix_count}{SCORE} = $score;
+            my $reentrant = $1;
+            $RES->{'num_re_hel'}++ while ($reentrant =~ /-/g);
         }
 
-        if($line =~ /Score\s=\s(.+)/)
-        {
-            $hTMData->{$helix_number}{$direction}{SET_SCORE} = $1;
-        }
-
-        if($line =~ /Score:\s+(.+)/)
-        {
-            $best_score = $1;
-        }
+        $RES->{'in/out'} = 0 if ($memsat_result =~ /^N-terminal:\s+in/m);
+        $RES->{'in/out'} = 1 if ($memsat_result =~ /^N-terminal:\s+out/m);
     }
 
-    my $highest_score= -1000000;
-    my $highest_set = 0;
-    my $highest_direction = '';
-    foreach my $helices (keys %$hTMData)
-    {
-        foreach my $direction (keys %{$hTMData->{$helices}})
-        {
-            if($hTMData->{$helices}{$direction}{SET_SCORE} > $highest_score)
-            {
-                $highest_score = $hTMData->{$helices}{$direction}{SET_SCORE};
-                $highest_set = $helices;
-                $highest_direction = $direction;
-            }
-        }
-    }
-
-    delete $hTMData->{$highest_set}{$highest_direction}{SET_SCORE};
-    foreach my $helix (sort {$a <=> $b} keys %{$hTMData->{$highest_set}{$highest_direction}})
-    {
-        next if $helix =~ /SET_SCORE/;
-        my $start =$hTMData->{$highest_set}{$highest_direction}{$helix}{START};
-        my $end = $hTMData->{$highest_set}{$highest_direction}{$helix}{END};
-        my $score = $hTMData->{$highest_set}{$highest_direction}{$helix}{SCORE};
-
-        if ($score != 0 && $helix == 1)
-        {
-            $RES->{'in/out'} = 1 if $highest_direction eq "-";
-            $RES->{'in/out'} = 0.5 if $highest_direction eq "+";
-        }
-
-        if ($score != 0)
-        {
-            $RES->{'num_tm'}++;
-            my $n = $helix-1;
-            $CFG->[$n]{'from'} = $start;
-            $CFG->[$n]{'to'}   = $end;
-
-            for (my $i = $start; $i <= $end; $i++)
-            {
-                $RES->{'tm_res'}++;
-                $self->addNterm($RES, 'tm') if ($i <= 50);
-                $self->addMidSegment($RES, $i, 'tm') if (($i > 50) && ($i <= ($self->len() - 50)));
-                $self->addCterm($RES, 'tm') if ($i > ($self->len() - 50));
-            }
-        }
-    }
-
-    close(MEM);
-
-    $RES->{tm_res}  /= $self->len();
-    $RES->{tm_nterm}/= 50;
-    $RES->{tm_cterm}/= 50;
-
-    for (my $i=1; $i <9; $i++)
-    {
-       	$RES->{"tm_S$i"} = $RES->{"tm_S$i"} > $self->seg8() ? 1 : $RES->{"tm_S$i"}/$self->seg8();
-    }
-
-    $self->{results} = $RES;
+    $self->{'results'} = $RES;
 }
-
 
 
 # Old subroutine used when running memsat3.

@@ -4,44 +4,42 @@ package SeqFeat;
 
 use strict;
 use base 'Pred';
-
-
+use Data::Dumper;
 
 sub new
 {
-    my ($class, $aa, $id, $md5, $cfg) = @_;
+    my ($class, $aa, $id, $md5, $cfg, $web_control) = @_;
     my $name = 'SF';
 
     my $self = $class->SUPER::new($aa, $id, $md5, $cfg->{'PATH'}, $name);
+    bless $self, $class;
 
-    $self->{'exe'} = "$cfg->{'SEQFEAT'}/features";
-    $self->{'cmd'} = "$self->{'exe'}" .
-                     " -i $self->{'path'}/$self->{'md5'}.fsa >" .
-                     " $self->{'path'}/$self->{'md5'}.seqfeat ";
-
+    $self->{'exe'}     = "$cfg->{'SEQFEAT'}/features";
+    $self->{'outfile'} = "$self->{'path'}/$self->{'md5'}.seqfeat";
+    $self->{'cmd'}     = "$self->{'exe'}" .
+                         " -i $self->{'path'}/$self->{'md5'}.fsa >" .
+                         " $self->{'outfile'}";
+    $self->{'web_control'} = $web_control;
     $self->{$self->name()} = {}; # This weird organisation comes from legacy code.
     $self->{'AA'}          = {};
-
     return $self;
 }
+
 
 sub normalise
 {
     my ($self) = @_;
 
-    #log frequency data types
-    print($self->{'results'}{'len'}."\n");
-    $self->{'results'}{'len'}        = (log($self->{'results'}{'len'})-log(2))/(log(34350)-log(2));
-    $self->{'results'}{'mwt'}        = (log($self->{'results'}{'mwt'})-log(149.2000671387)) / (log(3816170)-log(149.2000671387));
-    $self->{'results'}{'vol'}        = (log($self->{'results'}{'vol'})-log(162.8999938948)) / (log(4592520)-log(162.89999389648));
-    $self->{'results'}{'surf'}       = (log($self->{'results'}{'surf'})-log(185)) / (log(6262791)-log(185));
-    $self->{'results'}{'hydro'}      = ($self->{'results'}{'hydro'}+16072.599609375) / (7980.0200195312+16072.599609375);
-    $self->{'results'}{'ave_hydro'}  = log($self->{'results'}{'ave_hydro'}+4.372373) / log(65.41+4.372373);
-    $self->{'results'}{'charge'}     = ($self->{'results'}{'charge'}+356.111) / (504.622+356.111);
-    $self->{'results'}{'mol_ext'}    = (log(1+$self->{'results'}{'mol_ext'})-log(436)) / (log(3930261)-log(436)) if ($self->{'results'}{'mol_ext'} > 0);
-    $self->{'results'}{'iso_pt'}     = ($self->{'results'}{'iso_pt'}-2.14645) / (14-2.14645);
-    $self->{'results'}{'aliphatic'} /= 234;
-    $self->{'results'}{'num_atoms'}  = log($self->{'results'}{'num_atoms'}-17) / log(539031-17);
+    $self->{'results'}{'len'}       = log(1+$self->{'results'}{'len'}) / log(2001);
+    $self->{'results'}{'mwt'}       = log(1+$self->{'results'}{'mwt'}) / log(300000);
+    $self->{'results'}{'vol'}       = log(1+$self->{'results'}{'vol'}) / log(300000);
+    $self->{'results'}{'surf'}      = log(1+$self->{'results'}{'surf'}) / log(400000);
+    $self->{'results'}{'ave_hydro'} = log(5.5+$self->{'results'}{'ave_hydro'}) / log(5.5+70);
+    $self->{'results'}{'charge'}    = (300+$self->{'results'}{'charge'}) / (300+200);
+    $self->{'results'}{'mol_ext'}   = log(1+$self->{'results'}{'mol_ext'}) / log(500000);
+    $self->{'results'}{'iso_pt'}    = log(1+$self->{'results'}{'iso_pt'}) / log(15);
+    $self->{'results'}{'aliphatic'} = log(1+$self->{'results'}{'aliphatic'}) / log(200);
+    $self->{'results'}{'num_atoms'} = log(1+$self->{'results'}{'num_atoms'}) / log(36000);
 }
 
 sub parse
@@ -51,63 +49,46 @@ sub parse
     my $RES = {};
     my $CFG = $self->{$self->name()};
 
-    my @AA  = ('A','R','N','D','C','Q','E','G','H',
-               'I','L','K','M','F','P','S','T','W',
-               'Y','V');
-    my @ATOM= ('atomC','atomH','atomO','atomN','atomS');
+    my @AminoAcids   = ('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V');
+    my @Atoms = ('atomC', 'atomH', 'atomO', 'atomN', 'atomS');
 
-    if (-s "$self->{'path'}/$self->{'md5'}.seqfeat")
+    open(SEQFEAT, "<", $self->outfile()) or die "Cannot open seqfeat file... $!\n";
+    my $seqfeat_out = <SEQFEAT>;
+    close(SEQFEAT);
+
+    $seqfeat_out =~ s/^\s+//;
+    my @seqfeat = split(/\s+/, $seqfeat_out);
+
+    if($self->{'web_control'}){
+      die "Bad output in seqfeat file - has the output format changed ?\n" unless (($seqfeat[2] == $self->len()));
+    }
+    else{
+      die "Bad output in seqfeat file - has the output format changed ?\n" unless (($seqfeat[0] eq $self->md5()) && ($seqfeat[2] == $self->len()));
+    }
+    # See "$cfg->{'SEQFEAT'}/Sequence.cpp", Sequence::print().
+    $CFG->{'length'}                       = $RES->{'len'}       = $seqfeat[2];
+    $CFG->{'molecular weight'}             = $RES->{'mwt'}       = $seqfeat[3];
+    $CFG->{'volume'}                       = $RES->{'vol'}       = $seqfeat[4];
+    $CFG->{'surface area'}                 = $RES->{'surf'}      = $seqfeat[5];
+    $CFG->{'hydrophobicity'}               = $RES->{'ave_hydro'} = $seqfeat[7];
+    $CFG->{'charge'}                       = $RES->{'charge'}    = $seqfeat[8];
+    $CFG->{'molar extinction coefficient'} = $RES->{'mol_ext'}   = $seqfeat[9];
+    $CFG->{'isoelectric point'}            = $RES->{'iso_pt'}    = $seqfeat[10];
+    $CFG->{'aliphatic index'}              = $RES->{'aliphatic'} = $seqfeat[11];
+    $CFG->{'fraction positive residues'}   = $RES->{'ppos'}      = $seqfeat[14];
+    $CFG->{'fraction negative residues'}   = $RES->{'pneg'}      = $seqfeat[15];
+    $CFG->{'number of atoms'}              = $RES->{'num_atoms'} = $seqfeat[72];
+
+    my $x = 0;
+    for (my $i = 17; $i < 57; $i += 2, $x++)
     {
-        open(SF, "< $self->{'path'}/$self->{'md5'}.seqfeat");
+        $self->{'AA'}{$AminoAcids[$x]} = $RES->{$AminoAcids[$x]} = $seqfeat[$i];
+    }
 
-        while(<SF>)
-        {
-            chomp $_;
-            next if $_ =~ /^\s*$/;
-
-            my ($sid, $met, $len, $mwt, $vol, $surf, $hydro, $meanH, $charge, $mol_ext, $iso, $aliphat, $npos, $nneg, $ppos, $pneg) = split(/\s+/,$_);
-
-            $RES->{'len'}       = $len;
-            $RES->{'mwt'}       = $mwt;
-            $RES->{'vol'}       = $vol;
-            $RES->{'surf'}      = $surf;
-            $RES->{'hydro'}     = $hydro;
-            $RES->{'ave_hydro'} = $meanH;
-            $RES->{'charge'}    = $charge;
-            $RES->{'mol_ext'}   = $mol_ext;
-            $RES->{'iso_pt'}    = $iso;
-            $RES->{'aliphatic'} = $aliphat;
-            $RES->{'npos'}      = $ppos;
-            $RES->{'nneg'}      = $pneg;
-
-            $CFG->{'molecular weight'}{'val'}             = $mwt;
-            $CFG->{'hydrophobicity'}{'val'}               = $meanH;
-            $CFG->{'molar extinction coefficient'}{'val'} = $mol_ext;
-            $CFG->{'isoelectric point'}{'val'}            = $iso;
-            $CFG->{'charge'}{'val'}                       = $charge;
-            $CFG->{'aliphatic index'}{'val'}              = $aliphat;
-            $CFG->{'percent positive residues'}{'val'}    = $ppos*100;
-            $CFG->{'percent negative residues'}{'val'}    = $pneg*100;
-
-            my @tmp = split(/\s+/,$_);
-            my $x = 0;
-
-            for(my $i = 17; $i < 56; $i += 2, $x++)
-            {
-                $RES->{$AA[$x]} = $tmp[$i];
-                $self->{'AA'}{$AA[$x]}{'val'} = $tmp[$i];
-            }
-
-            $x = 0;
-            for(my $i = 63; $i < 72; $i += 2, $x++)
-            {
-                $RES->{$ATOM[$x]} = $tmp[$i];
-            }
-
-            $RES->{'num_atoms'} = pop @tmp;
-        }
-
-        close(SF);
+    $x = 0;
+    for (my $i = 63; $i < 73; $i += 2, $x++)
+    {
+        $CFG->{$Atoms[$x]} = $RES->{$Atoms[$x]} = $seqfeat[$i];
     }
 
     $self->{'results'} = $RES;

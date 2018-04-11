@@ -5,34 +5,38 @@ package PEST;
 use strict;
 use base 'Pred';
 
-
-
 sub new
 {
     my ($class, $aa, $id, $md5, $cfg) = @_;
     my $name = 'PE';
-    
+
     my $self = $class->SUPER::new($aa, $id, $md5, $cfg->{'PATH'}, $name);
-    
-    $self->{'exe'} = "$cfg->{'PEST'}/epestfind";
-    $self->{'cmd'} = "$self->{exe}" . 
-                     " -graph NO" . 
-                     " -window 10" . 
-                     " -order 2" . 
-                     " -threshold 5.0" . 
-                     " $self->{path}/$self->{md5}.fsa" . 
-                     " -outfile $self->{path}/$self->{md5}.pest";
-    
+    bless $self, $class;
+
+    $self->{'exe'}     = "$cfg->{'PEST'}/epestfind";
+    $self->{'outfile'} = "$self->{'path'}/$self->{'md5'}.pest";
+    $self->{'cmd'}     = "$self->{'exe'}" .
+                         " -sequence $self->{'path'}/$self->{'md5'}.fsa" .
+                         " -sformat1 fastA" .
+                         " -window 10" .
+                         " -order 2" .
+                         " -outfile $self->{'outfile'}" .
+                         " -graph none";
+
+    $self->{'numSegments'} = 8;
+    $self->{'segments'}    = $self->createSegments($self->{'numSegments'});
     $self->{$self->name()} = []; # This weird organisation comes from legacy code.
-    
+
     return $self;
 }
+
 
 sub normalise
 {
     my ($self) = @_;
 
-    $self->{'results'}{'num_pest'} = log(1+$self->{'results'}{'num_pest'}) / log(123);
+    $self->{'results'}{'num_pest_regions'} = log(1+$self->{'results'}{'num_pest_regions'}) / log(20);
+    $self->{'results'}{'num_pest_res'} = log(1+$self->{'results'}{'num_pest_res'}) / log(1000);
 }
 
 sub parse
@@ -42,64 +46,39 @@ sub parse
     my $RES = {};
     my $CFG = $self->{$self->name()};
 
-    $RES->{'num_pest'}   = 0;
-    $RES->{'pest_res'}   = 0;
-    $RES->{'pest_nterm'} = 0;
-    $RES->{'pest_cterm'} = 0;
-    
-    for(my $i=1; $i<9; $i++)
+    my $min_pest_length = 1; # Minimum number of consecutive PEST residues forming a PEST region.
+
+    $RES->{'num_pest_regions'} = 0;
+    $RES->{'num_pest_res'}     = 0;
+    $RES->{'pest_nterm'}       = 0;
+    $RES->{'pest_cterm'}       = 0;
+
+    for (my $i = 1; $i <= $self->{'numSegments'}; $i++)
     {
 	$RES->{"pest_S$i"} = 0;
     }
 
-    $/="\n";
-
-    if(-s "$self->{path}/$self->{md5}.pest")
+    open(PEST, "<", $self->outfile()) or die "Cannot open PEST file... $!\n";
+    while (defined(my $line = <PEST>))
     {
-	open(PST, "< $self->{path}/$self->{md5}.pest");
-
-        while(<PST>)
+        if ($line =~ /Potential\s+PEST\s+motif\s+with\s+(\d+)\s+amino\s+acids\s+between\s+positions?\s+(\d+)\s+and\s+\d+/)
         {
-            $_ =~ s/^\s*//;
+            my ($length_pest, $start_pest, $stop_pest) = ($1, ($2 + 1), ($2 + $1)); # Peculiar output of epestfind.
 
-            $RES->{num_pest} = $+ if $_ =~ /^(\d+)\s+PEST\s+motifs*\s+were\s+identified/;
+            $RES->{'num_pest_res'} += $length_pest;
 
-            if( $_ =~ /PEST\s+motif\s+with\s+\d+\s+amino\s+acids\s+between\s+position\s+(\d+)\s+and\s+(\d+)/ )
+            foreach my $position ($start_pest..$stop_pest)
             {
-              my ($from,$to) = ($1,$2);
+                $self->addResidue($RES, $position, 'pest');
+            }
 
-              my $n = exists($CFG->[0]) ? @$CFG : 0;
-              $CFG->[$n]{'from'} =$from;
-              $CFG->[$n]{'to'}   =$to;
-
-              for(my $idx=$from; $idx < $to; $idx++)
-              {
-	       $RES->{'pest_res'}++;
-               $self->addNterm($RES, 'pest') if ($idx <= 50);
-               $self->addMidSegment($RES, $idx, 'pest') if (($idx > 50) && ($idx <= ($self->len() - 50)));
-               $self->addCterm($RES, 'pest') if ($idx > ($self->len() - 50));
- 	      }
-
-	   }
- 
+            $self->addThresholdedRegion($RES, $CFG, 'pest', [ $min_pest_length ], $start_pest, $length_pest);
         }
-
-        close(PST);
     }
-    
-    $RES->{pest_nterm} /= 50;
-    $RES->{pest_cterm} /= 50;
-    
-    for(my $i=1; $i<9; $i++)
-    {
-	$RES->{"pest_S$i"} /= $self->seg8();
-    }
+    close(PEST);
 
-    $RES->{pest_res} /= $self->len();
-
-    $self->{results} = $RES;
+    $self->{'results'} = $RES;
 }
-
 
 
 1;

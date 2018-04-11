@@ -42,7 +42,7 @@ close(FASTA);
 
 if($web_control)
 {
-  $fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fa/;
+  $fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fsa/;
   $md5 = $1;
 }
 my $id = $md5; # Weird choice inherited from legacy code.
@@ -115,12 +115,14 @@ sub init
       $PROGS->{DISOPRED} = new DisoPred($aa, $id, $md5, $cfg, 1);
       $PROGS->{MEMSAT}   = new Memsat($aa, $id, $md5, $cfg, 1);
       $PROGS->{PSIPRED}  = new PsiPred($aa, $id, $md5, $cfg, 1);
+      $PROGS->{SEQFEAT}  = new SeqFeat($aa, $id, $md5, $cfg, 1);
     }
     else
     {
       $PROGS->{DISOPRED} = new DisoPred($aa, $id, $md5, $cfg, 0);
       $PROGS->{MEMSAT}   = new Memsat($aa, $id, $md5, $cfg, 0);
       $PROGS->{PSIPRED}  = new PsiPred($aa, $id, $md5, $cfg, 0);
+      $PROGS->{SEQFEAT}  = new SeqFeat($aa, $id, $md5, $cfg, 0);
     }
     $PROGS->{NETNGLYC} = new NetNGlyc($aa, $id, $md5, $cfg);
     $PROGS->{NETOGLYC} = new NetOGlyc($aa, $id, $md5, $cfg);
@@ -129,7 +131,6 @@ sub init
     $PROGS->{PSORT}    = new Psort($aa, $id, $md5, $cfg);
     $PROGS->{COILS}    = new Coils($aa, $id, $md5, $cfg);
     $PROGS->{LOWC}     = new LowComplex($aa, $id, $md5, $cfg);
-    $PROGS->{SEQFEAT}  = new SeqFeat($aa, $id, $md5, $cfg);
 
     return $PROGS;
 }
@@ -214,6 +215,7 @@ sub print_results
 
     foreach my $prog (sort keys %$PRED)
     {
+        print STDERR "Printing $prog\n";
 	      $PRED->{$prog}->print_results($out, $type);
         $PRED->{$prog}->print_config($fconf) if (defined($fconf));
     }
