@@ -46,6 +46,7 @@ if($web_control)
   ## $md5 = $1;
   if($fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fsa/){$md5 = $1;}
   elsif($fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.sing/){$md5 = $1;}
+  print($md5."\n");
 }
 my $id = $md5; # Weird choice inherited from legacy code.
 
