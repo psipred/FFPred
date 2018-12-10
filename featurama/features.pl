@@ -44,8 +44,8 @@ if($web_control)
 {
   ## $fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fsa/;
   ## $md5 = $1;
-  if($fasta_file =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fsa/){$md5 = $1;}
-  elsif($fasta_file =~ /^(.{8}-.{4}-.{4}-.{4}-.{12})\.sing/){$md5 = $1;}
+  if($fasta =~ /(.{8}-.{4}-.{4}-.{4}-.{12})\.fsa/){$md5 = $1;}
+  elsif($fasta =~ /^(.{8}-.{4}-.{4}-.{4}-.{12})\.sing/){$md5 = $1;}
 }
 my $id = $md5; # Weird choice inherited from legacy code.
 
