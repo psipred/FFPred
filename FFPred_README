@@ -18,8 +18,7 @@
   pieces of third-party software. This code is capable of running analyses with
   Human SVMs v3.0 and Fly SVMs v1.0 (see below)
   Detailed instructions on how to set everything up are reported below. Please
-  take some time to read them carefully and in sequential order - ignore them
-  at your peril!
+  take some time to read them carefully and in sequential order
 
 #------------------------------------------------------------------------------
 
@@ -70,8 +69,9 @@ ITS USE AND ANY RESULTS OBTAINED.
   SIGNALP               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp
   WoLFPSORT             http://bioinfadmin.cs.ucl.ac.uk/downloads/ffpred_feature_suite/wolfpsort_0.2.zip
   PFILT                 http://bioinfadmin.cs.ucl.ac.uk/downloads/pfilt/
-  BLAST                 ftp://ftp.ncbi.nih.gov/blast/executables/
+  BLAST                 ftp://ftp.ncbi.nlm.nih.gov/blast/executables/legacy.NOTSUPPORTED/2.2.26/
   SVM-Light             http://svmlight.joachims.org/
+  Uniref90              ftp://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref90/uniref90.fasta.gz
 
   Perl 5.6 or later, including core modules Getopt::Long and Digest::MD5
 
@@ -95,10 +95,10 @@ ITS USE AND ANY RESULTS OBTAINED.
 
         chmod a+x FFPred.pl
         chmod a+x featurama/features.pl
-        chmod a+x material/uniref/UniRef_xml_to_fasta.pl
 
   Also, make sure the relevant folders can be written to:
 
+        mkdir bin data featurama SVMs uniref90
         chmod -R u+w bin data featurama SVMs uniref90
         chmod a+w jobs
         chmod a+w out
@@ -113,8 +113,8 @@ ITS USE AND ANY RESULTS OBTAINED.
         perl -c FFPred.pl
         perl -c featurama/features.pl
 
-  Finally, note that the release includes a configuration file, called
-  "FFPred4/CONFIG", that can be edited to set many useful paths (all of them
+  Finally, edit the included a configuration file, called
+  "FFPred4/CONFIG", to set the paths (all of them
   are explained in detail in what follows):
 
   PFILT		directory containing the executable for pfilt software
@@ -134,7 +134,7 @@ ITS USE AND ANY RESULTS OBTAINED.
   SEQFEAT	directory containing the executable for SeqFeat
   PEST		directory containing the executable for EMBOSS/pestefind software
   PATH		directory for temporary FFPred4 files
-  DB		full path to FASTA database (UniRef90)
+  DB		  full path to FASTA database (UniRef90)
   MASK_DB	full path to masked version of FASTA database (UniRef90)
 
   Importantly, as explained in the file header, all paths need to be specified
@@ -147,6 +147,9 @@ ITS USE AND ANY RESULTS OBTAINED.
   IMPORTANT: You should ensure each of these packages is installed and working
   correctly before you attempt to run FFPred. NETPHOS, NETOGLYC, NETNGLYC will
   all need to be hand edited.
+  
+  IMPORTANT: You must ensure that the correct blast database created using the
+  BLAST formatdb tool
 
 #------------------------------------------------------------------------------
 
