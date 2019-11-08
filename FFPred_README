@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
 # README
-# Last modified: February 2016
+# Last modified: November 2019
 # Author:    psipred@cs.ucl.ac.uk
 # Standalone FFPred Code Version 4.0 for function prediction
 # Tested on linux x86_64 machines running Centos 7
@@ -161,15 +161,13 @@ ITS USE AND ANY RESULTS OBTAINED.
   Recent releases of third-party software, or versions that are more suitable
   for the user's needs/operating system/etc, can be downloaded from appropriate
   sources (see above).
-  We provide compressed files of all needed third-party software working well
-  for example with a linux x86_64 machine running Scientific Linux 6 (see the
-  content of "FFPred4/material/third_party/"); these default versions exactly
-  correspond to the versions that were used for the training of FFPred4 and for
-  running the test examples included below.
-
-  Users can decide whether to use the most recent versions or the ones we
-  provide; however, in the first case, outputs may be different as FFPred4's
-  SVMs were trained (and optimised) on the versions we provide.
+  
+  We provide legacy versions of the 3rd party software that were used to train 
+  the initial version of FFPred at: 
+  http://bioinfadmin.cs.ucl.ac.uk/downloads/ffpred/old/FFPred2.tar.gz
+  We note that users may need to get their own licences for various pieces of this
+  software themselves. Users can decide whether to use the most recent versions 
+  or the legacy versions;
 
   In case the user needs to re-download some of the software due to different
   flavour of operating system etc (for example for BLAST), an indication of the
@@ -179,9 +177,7 @@ ITS USE AND ANY RESULTS OBTAINED.
 
   The same is true for the version of the UniRef90 database used for BLAST
   searches, except that in this case the default version is NOT provided within
-  the downloaded file due to its size (~20 GB). In this case, the default
-  version (i.e. the one used for training) is the UniRef90 database release
-  2012_06 and can be downloaded from:
+  the downloaded file due to its size (~20 GB).
 
   ftp://ftp.uniprot.org/pub/databases/uniprot/previous_releases/
   ftp://ftp.ebi.ac.uk/pub/databases/uniprot/previous_releases/
@@ -202,10 +198,11 @@ ITS USE AND ANY RESULTS OBTAINED.
 
   -- BLAST
 
-  BLAST executables (default version: BLAST 2.2.26) can be either downloaded or
-  obtained from "FFPred4/material/third_party/blast-2.2.26-ia32-linux.tar.gz".
-  Note that use of BLAST+ is not supported within FFPred4.
-  Follow their instructions for extracting/compiling the material as needed in
+  BLAST executables (default version: LEGACY BLAST 2.2.26) should be downloaded 
+  from the NCBI. If that is not possible We host a version of legacy BLAST at
+  http://bioinfadmin.cs.ucl.ac.uk/downloads/legacy_blast/ncbi.tar.gz
+  
+  Follow the NCBI instructions for extracting/compiling the material as needed in
   a folder of your choice (e.g. within "FFPred4/material/third_party/"). After
   doing that, note that only few of the files are needed by FFPred4. Firstly,
   copy the following executables into the folder that is specified in the
@@ -296,7 +293,7 @@ ITS USE AND ANY RESULTS OBTAINED.
   system/platform - these instructions refer to the default case.
   From the main FFPred4 directory run:
 
-        tar -xzvf material/third_party/EMBOSS-6.4.0.tar.gz -C featurama/software/
+        tar -xzvf EMBOSS-6.4.0.tar.gz -C featurama/software/
 
   This command used the version of EMBOSS that is provided with the FFPred4
   release, but it can easily be adapted using any EMBOSS tar file as the first
@@ -328,16 +325,16 @@ ITS USE AND ANY RESULTS OBTAINED.
   following commands, which are of course run again from the main FFPred4
   directory (note the different flags for different compression methods):
 
-        tar -xzvf material/third_party/psipred3.3.tar.gz -C featurama/software/
-        tar -xzvf material/third_party/disopred2.43.tar.gz -C featurama/software/
-        tar -xzvf material/third_party/memsat-svm1.2.tar.gz -C featurama/software/
-        tar -xZvf material/third_party/signalp-4.0e.Linux.tar.Z -C featurama/software/
-        tar -xZvf material/third_party/netphos-3.1.Linux.tar.Z -C featurama/software/
-        tar -xZvf material/third_party/netOglyc-3.1d.Linux.tar.Z -C featurama/software/
-        tar -xZvf material/third_party/netNglyc-1.0c.Linux.tar.Z -C featurama/software/
-        tar -xzvf material/third_party/WoLFPSORT_package_v0.2.tar.gz -C featurama/software/
-        tar -xzvf material/third_party/ncoils.tar.gz -C featurama/software/
-        tar -xzvf material/third_party/seqfeat.tar.gz  -C featurama/software/
+        tar -xzvf psipred3.3.tar.gz -C featurama/software/
+        tar -xzvf disopred2.43.tar.gz -C featurama/software/
+        tar -xzvf memsat-svm1.2.tar.gz -C featurama/software/
+        tar -xZvf signalp-4.0e.Linux.tar.Z -C featurama/software/
+        tar -xZvf netphos-3.1.Linux.tar.Z -C featurama/software/
+        tar -xZvf netOglyc-3.1d.Linux.tar.Z -C featurama/software/
+        tar -xZvf netNglyc-1.0c.Linux.tar.Z -C featurama/software/
+        tar -xzvf WoLFPSORT_package_v0.2.tar.gz -C featurama/software/
+        tar -xzvf ncoils.tar.gz -C featurama/software/
+        tar -xzvf seqfeat.tar.gz  -C featurama/software/
 
   If using different versions, make sure to extract files to those locations
   (see the "-C" flag) when using the default CONFIG file. After that, compiling
@@ -348,7 +345,7 @@ ITS USE AND ANY RESULTS OBTAINED.
   appropriately according to local configurations.
   Also, due to compatibility issues and problems with FFPred legacy code, the
   following need to be observed:
-  _NOTE_A_) the "pfilt" program (as usual, obtain the source files from
+  _NOTE_A_) the "pfilt" program (if using the legacy set obtain the source files from
   "FFPred4/material/third_party/pfilt1.4.tar.gz" or at the webpage found above
   under "SOFTWARE REQUIREMENTS") needs to be used later to prepare the database
   for use by FFPred4, and also it actually constitutes the (only) file needed
@@ -398,34 +395,6 @@ ITS USE AND ANY RESULTS OBTAINED.
   pfilt
   seq2mtx
   svm_classify
-
-
-  -- IMPORTANT - ISSUES WITH MEMSAT-SVM
-
-  MEMSAT-SVM files work perfectly for single jobs as of version 1.2 (included
-  in the FFPred4 release). However, in case users want to run batch jobs on a
-  cluster/HPC facility via e.g. SGE or other Grid Engine systems, issues may
-  arise if multiple very similar sequences are submitted at the same time,
-  which in turn may prevent the FFPred4 standalone from running properly.
-
-  To avoid those, after installing MEMSAT-SVM, just run BOTH of the following
-  two commands from the main FFPred4 directory to copy bug-fixed versions of
-  the relevant files to the appropriate folders:
-
-        cp material/memsat_correct/Memsat.pm featurama/lib/
-        cp material/memsat_correct/run_memsat-svm.pl featurama/software/memsat-svm/
-
-  Note that after doing this, all special paths within the main MEMSAT-SVM
-  executable ("FFPred4/featurama/software/memsat-svm/run_memsat-svm.pl") need
-  to be set again. In particular:
-  A) variables $ncbidir and $dbname at the top of the executable should in
-  principle be set respectively to full paths to "FFPred4/bin/" and
-  "FFPred4/uniref90/uniref90.fasta" (in the default cases, or to the relevant
-  user-defined locations if defaults are changed) - although note that when
-  using MEMSAT-SVM with FFPred4, those variables will not be actually used;
-  B) importantly, the library declaration (use lib ...) on line 20 of the
-  executable should be edited to point to the FULL path to folder
-  "FFPred4/featurama/software/memsat-svm/lib".
 
   -- DATABASE
 
