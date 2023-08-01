@@ -58,15 +58,15 @@ ITS USE AND ANY RESULTS OBTAINED.
   within the FFPred4 download, and they can easily be all you need - please see
   the detailed instructions that follow!
 
-  EMBOSS                ftp://emboss.open-bio.org/pub/EMBOSS/
+  EMBOSS                https://emboss.sourceforge.net/download/
   PSIPRED               http://bioinfadmin.cs.ucl.ac.uk/downloads/psipred/
   DISOPRED              http://bioinfadmin.cs.ucl.ac.uk/downloads/DISOPRED/
   MEMSAT-SVM            http://bioinfadmin.cs.ucl.ac.uk/downloads/memsat-svm/
   COILS                 ftp://ftp.ebi.ac.uk/pub/software/unix/coils-2.2/
-  NET-N-GLYC            http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netNglyc
-  NET-O-GLYC            http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netOglyc
-  NETPHOS               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netphos
-  SIGNALP               http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?signalp
+  NET-N-GLYC 1.0        https://services.healthtech.dtu.dk/services/NetNGlyc-1.0/
+  NET-O-GLYC 3.1        https://services.healthtech.dtu.dk/services/NetOGlyc-4.0/
+  NETPHOS 3.1/APE 1.0   https://services.healthtech.dtu.dk/services/NetPhos-3.1/
+  SIGNALP 4.1           https://services.healthtech.dtu.dk/services/SignalP-6.0/
   WoLFPSORT             http://bioinfadmin.cs.ucl.ac.uk/downloads/ffpred_feature_suite/wolfpsort_0.2.zip
   PFILT                 http://bioinfadmin.cs.ucl.ac.uk/downloads/pfilt/
   BLAST                 ftp://ftp.ncbi.nlm.nih.gov/blast/executables/legacy.NOTSUPPORTED/2.2.26/
@@ -81,7 +81,7 @@ ITS USE AND ANY RESULTS OBTAINED.
 
   Please download FFPred 4.0  GITHUB
 
-    git clone https://github.com/psipred/FFPred4.git
+    git clone https://github.com/psipred/FFPred.git
 
   A copy of this README file is included in the tar file - top level directory.
 
@@ -98,7 +98,7 @@ ITS USE AND ANY RESULTS OBTAINED.
 
   Also, make sure the relevant folders can be written to:
 
-        mkdir bin data featurama SVMs uniref90
+        mkdir bin data featurama jobs out uniref90
         chmod -R u+w bin data featurama SVMs uniref90
         chmod a+w jobs
         chmod a+w out
